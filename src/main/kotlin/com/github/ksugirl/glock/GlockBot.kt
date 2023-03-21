@@ -35,11 +35,11 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
 
   private val restrictionsExecutor = newSingleThreadExecutor()
 
-  private val tempReplySec = ofSeconds(3).toSeconds()
+  private val tempMessageSec = ofSeconds(5).toSeconds()
 
   private val restrictionsDurationSec = restrictionsDuration.toSeconds()
 
-  private val tempReplies = ConcurrentHashMap<Long, ConcurrentHashMap<Long, Long>>()
+  private val tempMessages = ConcurrentHashMap<Long, ConcurrentHashMap<Long, Long>>()
 
   private val restrictedUsers = ConcurrentHashMap<Long, ConcurrentHashMap<Long, Long>>()
 
@@ -79,9 +79,9 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
 
   private fun markAsTemp(chatId: Long, messageId: Long) {
     tempMessagesExecutor.execute {
-      tempReplies.compute(chatId) { _, replies ->
+      tempMessages.compute(chatId) { _, replies ->
         val tempReplies = replies ?: ConcurrentHashMap()
-        val untilDate = now().epochSecond + tempReplySec
+        val untilDate = now().epochSecond + tempMessageSec
         tempReplies[messageId] = untilDate
         return@compute tempReplies
       }
@@ -125,9 +125,9 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     return getRestrictionDateUntil(chatId, userId) != null
   }
 
-  fun cleanTempReplies() {
+  fun cleanTempMessages() {
     tempMessagesExecutor.submit {
-      for ((chatId, repliesIds) in tempReplies) {
+      for ((chatId, repliesIds) in tempMessages) {
         val it = repliesIds.iterator()
         while (it.hasNext()) {
           val (replyId, expirationSec) = it.next()
