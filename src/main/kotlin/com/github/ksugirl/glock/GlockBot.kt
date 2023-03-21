@@ -25,7 +25,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
       token = apiKey
       dispatch {
         command("shoot", ::shoot)
-        message(::checkoutRestrictions)
+        message(this@GlockBot::checkRestrictions)
       }
     }
 
@@ -89,7 +89,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     }.get()
   }
 
-  private fun checkoutRestrictions(env: MessageHandlerEnvironment) {
+  private fun checkRestrictions(env: MessageHandlerEnvironment) {
     val sender = env.message.from ?: return
     val messageId = env.message.messageId
     val senderId = sender.id
