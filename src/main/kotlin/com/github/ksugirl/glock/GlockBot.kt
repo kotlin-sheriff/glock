@@ -52,7 +52,8 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     val userId = message.from?.id ?: return
     val messageId = message.messageId
     restrictUser(chatId, userId)
-    sendTempMessage(chatId, "💥", replyTo = messageId)
+    val animation = setOf("💥", "💨","🗯️").random()
+    sendTempMessage(chatId, animation, replyTo = messageId)
   }
 
   private fun restrictUser(chatId: Long, userId: Long) {
