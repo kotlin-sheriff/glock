@@ -8,6 +8,8 @@ import com.github.kotlintelegrambot.dispatcher.handlers.MessageHandlerEnvironmen
 import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.github.kotlintelegrambot.entities.ChatPermissions
+import com.github.kotlintelegrambot.entities.ParseMode
+import com.github.kotlintelegrambot.entities.ParseMode.MARKDOWN_V2
 import java.lang.Thread.startVirtualThread
 import java.time.Duration
 import java.time.Duration.ofSeconds
@@ -68,7 +70,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     }
   }
 
-  private fun sendTempMessage(chatId: Long, text: String, replyTo: Long? = null) {
+  private fun sendTempMessage(chatId: Long, text: String, replyTo: Long? = null, parseMode: ParseMode? = null) {
     val tempMessage = bot.sendMessage(fromId(chatId), text, replyToMessageId = replyTo)
     val tempMessageId = tempMessage.get().messageId
     markAsTemp(chatId, tempMessageId)
@@ -106,10 +108,10 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     val userId = user.id
     val chatId = env.message.chat.id
     val untilDate = getRestrictionDateUntil(chatId, userId) ?: return
-    val username = user.username
-    val appeal = if (username == null) user.firstName else "@$username"
+    val firstName = user.firstName
+    val personalizedRestrictionMessage = "[$firstName](tg://user?id=${userId}), $restrictionMessage"
     if (now().epochSecond < untilDate) {
-      sendTempMessage(chatId, "$appeal, $restrictionMessage")
+      sendTempMessage(chatId, personalizedRestrictionMessage, parseMode = MARKDOWN_V2)
       bot.deleteMessage(fromId(chatId), messageId)
     }
   }
