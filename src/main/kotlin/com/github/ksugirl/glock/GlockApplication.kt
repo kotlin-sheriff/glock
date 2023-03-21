@@ -5,8 +5,10 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.time.Duration.ofMinutes
 import java.util.concurrent.TimeUnit.SECONDS
 
@@ -32,15 +34,27 @@ class GlockApplication {
   }
 
   @Bean
+  fun taskScheduler(): TaskScheduler {
+    val scheduler = ThreadPoolTaskScheduler()
+    scheduler.poolSize = 2
+    return scheduler
+  }
+
+  @Bean
   fun glockBot(): GlockBot {
     val bot = GlockBot(apiToken, restrictions(), ofMinutes(5))
     bot.startPollingAsync()
     return bot
   }
 
-  @Scheduled(fixedDelay = 5, timeUnit = SECONDS)
+  @Scheduled(fixedDelay = 10, timeUnit = SECONDS)
   fun cleanTempReplies() {
     glockBot().cleanTempReplies()
+  }
+
+  @Scheduled(fixedDelay = 1, timeUnit = SECONDS)
+  fun checkRestrictions() {
+    glockBot().checkRestrictions()
   }
 }
 
