@@ -18,14 +18,14 @@ import java.util.concurrent.Executors.newSingleThreadExecutor
 class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restrictionsDuration: Duration) {
 
   private val restrictionMessage =
-    "Your post has been deleted because you were shot. Deleted post can be viewed in the admin panel"
+    "your post has been deleted because you were shot. Deleted post can be viewed in the admin panel"
 
   private val bot =
     bot {
       token = apiKey
       dispatch {
         command("shoot", ::shoot)
-        message(this@GlockBot::checkRestrictions)
+        message(::checkRestrictions)
       }
     }
 
@@ -47,7 +47,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     val messageId = message.messageId
     val chatId = message.chat.id
     restrictUser(chatId, userId)
-    sendTempMessage(chatId, "💥", messageId)
+    sendTempReply(chatId, "💥", messageId)
   }
 
   private fun restrictUser(chatId: Long, userId: Long) {
@@ -62,7 +62,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     }
   }
 
-  private fun sendTempMessage(chatId: Long, text: String, originalMessageId: Long) {
+  private fun sendTempReply(chatId: Long, text: String, originalMessageId: Long) {
     val tempMessage = bot.sendMessage(fromId(chatId), text, replyToMessageId = originalMessageId)
     val tempMessageId = tempMessage.get().messageId
     repliesExecutor.execute {
@@ -96,9 +96,11 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     val chatId = env.message.chat.id
     val chatRestrictions = restrictedUsers[chatId] ?: return
     val untilDate = chatRestrictions[senderId] ?: return
+    val username = sender.username
+    val appeal = if(username == null) sender.firstName else "@$username"
     if (currentTimeMillis() < untilDate) {
+      sendTempReply(chatId, "$appeal, $restrictionMessage", messageId)
       bot.deleteMessage(fromId(chatId), messageId)
-      sendTempMessage(chatId, restrictionMessage, messageId)
     }
   }
 
