@@ -50,13 +50,13 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, durati
   }
 
   fun cleanTempReplies() {
-    tempMessagesExecutor.execute {
+    tempMessagesExecutor.submit {
       for ((chatId, messageIds) in tempMessagesIds) {
         for (messageId in messageIds) {
           bot.deleteMessage(fromId(chatId), messageId)
         }
       }
-    }
+    }.get()
   }
 
   fun startPollingAsync() {
