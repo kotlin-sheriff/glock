@@ -25,9 +25,9 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, durati
 
   private val durationMillis = duration.toMillis()
 
-  private val tempMessagesIds = ConcurrentHashMap<Long, Set<Long>>()
+  private val tempRepliesIds = ConcurrentHashMap<Long, Set<Long>>()
 
-  private val tempMessagesExecutor = newSingleThreadExecutor()
+  private val tempRepliesExecutor = newSingleThreadExecutor()
 
   private fun shoot(env: CommandHandlerEnvironment) {
     val message = env.message.replyToMessage ?: return
@@ -42,16 +42,16 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, durati
   private fun sendTempReply(chat: Id, originalMessageId: Long) {
     val tempMessage = bot.sendMessage(chat, "💥", replyToMessageId = originalMessageId)
     val tempMessageId = tempMessage.get().messageId
-    tempMessagesExecutor.execute {
-      tempMessagesIds.compute(chat.id) { _, ids ->
+    tempRepliesExecutor.execute {
+      tempRepliesIds.compute(chat.id) { _, ids ->
         (ids ?: emptySet()) + tempMessageId
       }
     }
   }
 
   fun cleanTempReplies() {
-    tempMessagesExecutor.submit {
-      for ((chatId, messageIds) in tempMessagesIds) {
+    tempRepliesExecutor.submit {
+      for ((chatId, messageIds) in tempRepliesIds) {
         for (messageId in messageIds) {
           bot.deleteMessage(fromId(chatId), messageId)
         }
