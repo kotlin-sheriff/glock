@@ -33,7 +33,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
 
   private val restrictionsExecutor = newSingleThreadExecutor()
 
-  private val tempReplyMillis = ofSeconds(15).toMillis()
+  private val tempReplyMillis = ofSeconds(3).toMillis()
 
   private val restrictionsDurationMillis = restrictionsDuration.toMillis()
 
@@ -42,10 +42,14 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
   private val restrictedUsers = ConcurrentHashMap<Long, ConcurrentHashMap<Long, Long>>()
 
   private fun shoot(env: CommandHandlerEnvironment) {
+    val gunfighter = env.message.from?.id ?: return
     val message = env.message.replyToMessage ?: return
+    val chatId = message.chat.id
+    if (isRestricted(chatId, gunfighter)) {
+      return
+    }
     val userId = message.from?.id ?: return
     val messageId = message.messageId
-    val chatId = message.chat.id
     restrictUser(chatId, userId)
     sendTempReply(chatId, "💥", messageId)
   }
@@ -90,18 +94,26 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
   }
 
   private fun checkRestrictions(env: MessageHandlerEnvironment) {
-    val sender = env.message.from ?: return
+    val user = env.message.from ?: return
     val messageId = env.message.messageId
-    val senderId = sender.id
+    val userId = user.id
     val chatId = env.message.chat.id
-    val chatRestrictions = restrictedUsers[chatId] ?: return
-    val untilDate = chatRestrictions[senderId] ?: return
-    val username = sender.username
-    val appeal = if(username == null) sender.firstName else "@$username"
+    val untilDate = getRestrictionDateUntil(chatId, userId) ?: return
+    val username = user.username
+    val appeal = if (username == null) user.firstName else "@$username"
     if (currentTimeMillis() < untilDate) {
       sendTempReply(chatId, "$appeal, $restrictionMessage", messageId)
       bot.deleteMessage(fromId(chatId), messageId)
     }
+  }
+
+  private fun getRestrictionDateUntil(chatId: Long, userId: Long): Long? {
+    val chatRestrictions = restrictedUsers[chatId] ?: return null
+    return chatRestrictions[userId]
+  }
+
+  private fun isRestricted(chatId: Long, userId: Long): Boolean {
+    return getRestrictionDateUntil(chatId, userId) != null
   }
 
   fun cleanTempReplies() {
