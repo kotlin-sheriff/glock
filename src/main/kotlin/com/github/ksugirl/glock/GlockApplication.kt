@@ -39,7 +39,7 @@ class GlockApplication {
     return bot
   }
 
-  @Scheduled(fixedDelay = 15, timeUnit = SECONDS)
+  @Scheduled(fixedDelay = 35, timeUnit = SECONDS)
   fun cleanTempReplies() {
     glockBot().cleanTempReplies()
   }
