@@ -5,9 +5,13 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.scheduling.annotation.EnableScheduling
+import org.springframework.scheduling.annotation.Scheduled
 import java.time.Duration
 import java.time.Duration.ofMinutes
+import java.util.concurrent.TimeUnit.SECONDS
 
+@EnableScheduling
 @SpringBootApplication
 class GlockApplication {
 
@@ -38,6 +42,11 @@ class GlockApplication {
     val bot = GlockBot(apiToken, restrictions(), duration())
     bot.startPollingAsync()
     return bot
+  }
+
+  @Scheduled(fixedDelay = 15, timeUnit = SECONDS)
+  fun cleanupTempReplies() {
+    glockBot().cleanupTempReplies()
   }
 }
 
