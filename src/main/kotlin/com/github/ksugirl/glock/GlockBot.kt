@@ -45,17 +45,17 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
 
   private fun shoot(env: CommandHandlerEnvironment) {
     val gunfighter = env.message.from?.id ?: return
+    val gunfighterRequestId = env.message.messageId
+    val chatId = env.message.chat.id
     val message = env.message.replyToMessage ?: return
-    val chatId = message.chat.id
     if (isRestricted(chatId, gunfighter)) {
       return
     }
+    markAsTemp(chatId, gunfighterRequestId)
     val userId = message.from?.id ?: return
     val messageId = message.messageId
     restrictUser(chatId, userId)
     sendTempMessage(chatId, "💥", replyTo = messageId)
-    val gunfighterRequestId = env.message.messageId
-    markAsTemp(chatId, gunfighterRequestId)
   }
 
   private fun restrictUser(chatId: Long, userId: Long) {
