@@ -33,13 +33,8 @@ class GlockApplication {
   }
 
   @Bean
-  fun duration(): Duration {
-    return ofMinutes(5)
-  }
-
-  @Bean
   fun glockBot(): GlockBot {
-    val bot = GlockBot(apiToken, restrictions(), duration())
+    val bot = GlockBot(apiToken, restrictions(), ofMinutes(5))
     bot.startPollingAsync()
     return bot
   }
