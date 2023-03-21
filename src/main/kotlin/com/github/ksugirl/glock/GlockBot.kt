@@ -19,9 +19,6 @@ import java.util.concurrent.Executors.newSingleThreadExecutor
 
 class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restrictionsDuration: Duration) {
 
-  private val restrictionMessage =
-    "your post has been deleted because you were shot. Deleted post can be viewed in the admin panel"
-
   private val bot =
     bot {
       token = apiKey
@@ -111,9 +108,6 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     }
     val userId = user.id
     if (isRestricted(chatId, userId)) {
-      val firstName = user.firstName
-      val personalizedRestrictionMessage = "[$firstName](tg://user?id=${userId}), $restrictionMessage"
-      sendTempMessage(chatId, personalizedRestrictionMessage, parseMode = MARKDOWN_V2)
       bot.deleteMessage(fromId(chatId), messageId)
     }
   }
