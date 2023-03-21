@@ -39,3 +39,7 @@ tasks.withType<JavaCompile> {
 tasks.withType<Test> {
   useJUnitPlatform()
 }
+
+tasks.bootJar {
+  archiveVersion.set("boot")
+}
