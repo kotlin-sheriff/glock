@@ -10,10 +10,11 @@ import com.github.kotlintelegrambot.entities.ChatPermissions
 import java.lang.System.currentTimeMillis
 import java.lang.Thread.startVirtualThread
 import java.time.Duration
+import java.time.Duration.ofSeconds
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors.newSingleThreadExecutor
 
-class GlockBot(apiKey: String, private val restrictions: ChatPermissions, duration: Duration) {
+class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restrictionsDuration: Duration) {
 
   private val bot =
     bot {
@@ -23,18 +24,20 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, durati
       }
     }
 
-  private val durationMillis = duration.toMillis()
+  private val restrictionsDurationMillis = restrictionsDuration.toMillis()
 
-  private val tempRepliesIds = ConcurrentHashMap<Long, Set<Long>>()
+  private val tempReplyMillis = ofSeconds(15).toMillis()
 
-  private val tempRepliesExecutor = newSingleThreadExecutor()
+  private val tempRepliesIds = ConcurrentHashMap<Long, ConcurrentHashMap<Long, Long>>()
+
+  private val atomicExecutor = newSingleThreadExecutor()
 
   private fun shoot(env: CommandHandlerEnvironment) {
     val message = env.message.replyToMessage ?: return
     val messageId = message.messageId
     val userId = message.from?.id ?: return
     val chatId = message.chat.id.let(::fromId)
-    val untilDate = currentTimeMillis() + durationMillis
+    val untilDate = currentTimeMillis() + restrictionsDurationMillis
     bot.restrictChatMember(chatId, userId, restrictions, untilDate)
     sendTempReply(chatId, messageId)
   }
@@ -42,18 +45,26 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, durati
   private fun sendTempReply(chat: Id, originalMessageId: Long) {
     val tempMessage = bot.sendMessage(chat, "💥", replyToMessageId = originalMessageId)
     val tempMessageId = tempMessage.get().messageId
-    tempRepliesExecutor.execute {
-      tempRepliesIds.compute(chat.id) { _, ids ->
-        (ids ?: emptySet()) + tempMessageId
+    atomicExecutor.execute {
+      tempRepliesIds.compute(chat.id) { _, replies ->
+        val tempReplies = replies ?: ConcurrentHashMap()
+        val untilDate = currentTimeMillis() + tempReplyMillis
+        tempReplies[tempMessageId] = untilDate
+        return@compute tempReplies
       }
     }
   }
 
   fun cleanTempReplies() {
-    tempRepliesExecutor.submit {
-      for ((chatId, messageIds) in tempRepliesIds) {
-        for (messageId in messageIds) {
-          bot.deleteMessage(fromId(chatId), messageId)
+    atomicExecutor.submit {
+      for ((chatId, repliesIds) in tempRepliesIds) {
+        val it = repliesIds.iterator()
+        while (it.hasNext()) {
+          val (replyId, expirationMillis) = it.next()
+          if (currentTimeMillis() >= expirationMillis) {
+            bot.deleteMessage(fromId(chatId), replyId)
+            it.remove()
+          }
         }
       }
     }.get()

@@ -7,7 +7,6 @@ import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
-import java.time.Duration
 import java.time.Duration.ofMinutes
 import java.util.concurrent.TimeUnit.SECONDS
 
@@ -39,7 +38,7 @@ class GlockApplication {
     return bot
   }
 
-  @Scheduled(fixedDelay = 15, timeUnit = SECONDS)
+  @Scheduled(fixedDelay = 5, timeUnit = SECONDS)
   fun cleanTempReplies() {
     glockBot().cleanTempReplies()
   }
