@@ -107,6 +107,9 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     val messageId = env.message.messageId
     val userId = user.id
     val chatId = env.message.chat.id
+    if (isTempMessage(chatId, messageId)) {
+      return
+    }
     val untilDate = getRestrictionDateUntil(chatId, userId) ?: return
     val firstName = user.firstName
     val personalizedRestrictionMessage = "[$firstName](tg://user?id=${userId}), $restrictionMessage"
@@ -116,13 +119,20 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     }
   }
 
+  private fun isTempMessage(chatId: Long, messageId: Long): Boolean {
+    val chatTempMessages = tempMessages[chatId] ?: return false
+    val lifetimeUntil = chatTempMessages[messageId]
+    return lifetimeUntil != null
+  }
+
   private fun getRestrictionDateUntil(chatId: Long, userId: Long): Long? {
     val chatRestrictions = restrictedUsers[chatId] ?: return null
     return chatRestrictions[userId]
   }
 
   private fun isRestricted(chatId: Long, userId: Long): Boolean {
-    return getRestrictionDateUntil(chatId, userId) != null
+    val restrictedUntil = getRestrictionDateUntil(chatId, userId)
+    return restrictedUntil != null && now().epochSecond < restrictedUntil
   }
 
   fun cleanTempMessages() {
