@@ -125,7 +125,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
 
   private fun isRestricted(chatId: Long, userId: Long): Boolean {
     val restrictedUntil = getRestrictionDateUntil(chatId, userId)
-    return restrictedUntil != null && now().epochSecond < restrictedUntil
+    return restrictedUntil != null && now().epochSecond <= restrictedUntil
   }
 
   fun cleanTempMessages() {
