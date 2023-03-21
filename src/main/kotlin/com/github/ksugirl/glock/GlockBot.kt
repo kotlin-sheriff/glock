@@ -9,7 +9,6 @@ import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.github.kotlintelegrambot.entities.ParseMode
-import com.github.kotlintelegrambot.entities.ParseMode.MARKDOWN_V2
 import java.lang.Thread.startVirtualThread
 import java.time.Duration
 import java.time.Duration.ofSeconds
@@ -41,14 +40,14 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
   private val restrictedUsers = ConcurrentHashMap<Long, ConcurrentHashMap<Long, Long>>()
 
   private fun shoot(env: CommandHandlerEnvironment) {
-    val gunfighter = env.message.from?.id ?: return
-    val gunfighterRequestId = env.message.messageId
     val chatId = env.message.chat.id
-    val message = env.message.replyToMessage ?: return
-    if (isRestricted(chatId, gunfighter)) {
+    val gunfighterId = env.message.from?.id ?: return
+    if (isRestricted(chatId, gunfighterId)) {
       return
     }
+    val gunfighterRequestId = env.message.messageId
     markAsTemp(chatId, gunfighterRequestId)
+    val message = env.message.replyToMessage ?: return
     val userId = message.from?.id ?: return
     val messageId = message.messageId
     restrictUser(chatId, userId)
