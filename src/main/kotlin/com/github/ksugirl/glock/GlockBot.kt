@@ -49,7 +49,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, durati
     }
   }
 
-  fun cleanupTempReplies() {
+  fun cleanTempReplies() {
     tempMessagesExecutor.execute {
       for ((chatId, messageIds) in tempMessagesIds) {
         for (messageId in messageIds) {
