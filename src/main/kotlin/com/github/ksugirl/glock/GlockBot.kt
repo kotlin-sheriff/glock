@@ -29,7 +29,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
       }
     }
 
-  private val repliesExecutor = newSingleThreadExecutor()
+  private val tempMessagesExecutor = newSingleThreadExecutor()
 
   private val restrictionsExecutor = newSingleThreadExecutor()
 
@@ -51,7 +51,9 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     val userId = message.from?.id ?: return
     val messageId = message.messageId
     restrictUser(chatId, userId)
-    sendTempReply(chatId, "💥", messageId)
+    sendTempMessage(chatId, "💥", replyTo = messageId)
+    val gunfighterRequestId = env.message.messageId
+    markAsTemp(chatId, gunfighterRequestId)
   }
 
   private fun restrictUser(chatId: Long, userId: Long) {
@@ -66,14 +68,19 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     }
   }
 
-  private fun sendTempReply(chatId: Long, text: String, originalMessageId: Long) {
-    val tempMessage = bot.sendMessage(fromId(chatId), text, replyToMessageId = originalMessageId)
+  private fun sendTempMessage(chatId: Long, text: String, replyTo: Long? = null) {
+    val tempMessage = bot.sendMessage(fromId(chatId), text, replyToMessageId = replyTo)
     val tempMessageId = tempMessage.get().messageId
-    repliesExecutor.execute {
+    markAsTemp(chatId, tempMessageId)
+  }
+
+
+  private fun markAsTemp(chatId: Long, messageId: Long) {
+    tempMessagesExecutor.execute {
       tempReplies.compute(chatId) { _, replies ->
         val tempReplies = replies ?: ConcurrentHashMap()
         val untilDate = now().epochSecond + tempReplySec
-        tempReplies[tempMessageId] = untilDate
+        tempReplies[messageId] = untilDate
         return@compute tempReplies
       }
     }
@@ -102,7 +109,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     val username = user.username
     val appeal = if (username == null) user.firstName else "@$username"
     if (now().epochSecond < untilDate) {
-      sendTempReply(chatId, "$appeal, $restrictionMessage", messageId)
+      sendTempMessage(chatId, "$appeal, $restrictionMessage")
       bot.deleteMessage(fromId(chatId), messageId)
     }
   }
@@ -117,7 +124,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
   }
 
   fun cleanTempReplies() {
-    repliesExecutor.submit {
+    tempMessagesExecutor.submit {
       for ((chatId, repliesIds) in tempReplies) {
         val it = repliesIds.iterator()
         while (it.hasNext()) {
