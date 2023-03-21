@@ -8,10 +8,10 @@ import com.github.kotlintelegrambot.dispatcher.handlers.MessageHandlerEnvironmen
 import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.github.kotlintelegrambot.entities.ChatPermissions
-import java.lang.System.currentTimeMillis
 import java.lang.Thread.startVirtualThread
 import java.time.Duration
 import java.time.Duration.ofSeconds
+import java.time.Instant.now
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors.newSingleThreadExecutor
 
@@ -33,9 +33,9 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
 
   private val restrictionsExecutor = newSingleThreadExecutor()
 
-  private val tempReplyMillis = ofSeconds(3).toMillis()
+  private val tempReplySec = ofSeconds(3).toSeconds()
 
-  private val restrictionsDurationMillis = restrictionsDuration.toMillis()
+  private val restrictionsDurationSec = restrictionsDuration.toSeconds()
 
   private val tempReplies = ConcurrentHashMap<Long, ConcurrentHashMap<Long, Long>>()
 
@@ -55,7 +55,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
   }
 
   private fun restrictUser(chatId: Long, userId: Long) {
-    val untilDate = currentTimeMillis() + restrictionsDurationMillis
+    val untilDate = now().epochSecond + restrictionsDurationSec
     bot.restrictChatMember(fromId(chatId), userId, restrictions, untilDate)
     restrictionsExecutor.execute {
       restrictedUsers.compute(chatId) { _, users ->
@@ -72,7 +72,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     repliesExecutor.execute {
       tempReplies.compute(chatId) { _, replies ->
         val tempReplies = replies ?: ConcurrentHashMap()
-        val untilDate = currentTimeMillis() + tempReplyMillis
+        val untilDate = now().epochSecond + tempReplySec
         tempReplies[tempMessageId] = untilDate
         return@compute tempReplies
       }
@@ -85,7 +85,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
         val it = users.iterator()
         while (it.hasNext()) {
           val (_, expirationMillis) = it.next()
-          if (currentTimeMillis() >= expirationMillis) {
+          if (now().epochSecond >= expirationMillis) {
             it.remove()
           }
         }
@@ -101,7 +101,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     val untilDate = getRestrictionDateUntil(chatId, userId) ?: return
     val username = user.username
     val appeal = if (username == null) user.firstName else "@$username"
-    if (currentTimeMillis() < untilDate) {
+    if (now().epochSecond < untilDate) {
       sendTempReply(chatId, "$appeal, $restrictionMessage", messageId)
       bot.deleteMessage(fromId(chatId), messageId)
     }
@@ -121,8 +121,8 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
       for ((chatId, repliesIds) in tempReplies) {
         val it = repliesIds.iterator()
         while (it.hasNext()) {
-          val (replyId, expirationMillis) = it.next()
-          if (currentTimeMillis() >= expirationMillis) {
+          val (replyId, expirationSec) = it.next()
+          if (now().epochSecond >= expirationSec) {
             bot.deleteMessage(fromId(chatId), replyId)
             it.remove()
           }
