@@ -105,15 +105,14 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
   private fun checkRestrictions(env: MessageHandlerEnvironment) {
     val user = env.message.from ?: return
     val messageId = env.message.messageId
-    val userId = user.id
     val chatId = env.message.chat.id
     if (isTempMessage(chatId, messageId)) {
       return
     }
-    val untilDate = getRestrictionDateUntil(chatId, userId) ?: return
-    val firstName = user.firstName
-    val personalizedRestrictionMessage = "[$firstName](tg://user?id=${userId}), $restrictionMessage"
-    if (now().epochSecond < untilDate) {
+    val userId = user.id
+    if (isRestricted(chatId, userId)) {
+      val firstName = user.firstName
+      val personalizedRestrictionMessage = "[$firstName](tg://user?id=${userId}), $restrictionMessage"
       sendTempMessage(chatId, personalizedRestrictionMessage, parseMode = MARKDOWN_V2)
       bot.deleteMessage(fromId(chatId), messageId)
     }
