@@ -11,7 +11,6 @@ import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.github.kotlintelegrambot.entities.ParseMode
 import java.lang.Thread.startVirtualThread
 import java.time.Duration
-import java.time.Duration.ofSeconds
 import java.time.Instant.now
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors.newSingleThreadExecutor
@@ -31,7 +30,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
 
   private val restrictionsExecutor = newSingleThreadExecutor()
 
-  private val tempMessageSec = ofSeconds(5).toSeconds()
+  private val tempMessageSec = 3
 
   private val restrictionsDurationSec = restrictionsDuration.toSeconds()
 
@@ -51,7 +50,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
     val userId = message.from?.id ?: return
     val messageId = message.messageId
     restrictUser(chatId, userId)
-    val animation = setOf("💥", "💨","🗯️").random()
+    val animation = setOf("💥", "💨", "🗯").random()
     sendTempMessage(chatId, animation, replyTo = messageId)
   }
 
@@ -83,20 +82,6 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
         return@compute tempReplies
       }
     }
-  }
-
-  fun checkRestrictions() {
-    restrictionsExecutor.submit {
-      for ((_, users) in restrictedUsers) {
-        val it = users.iterator()
-        while (it.hasNext()) {
-          val (_, expirationSecond) = it.next()
-          if (now().epochSecond > expirationSecond) {
-            it.remove()
-          }
-        }
-      }
-    }.get()
   }
 
   private fun checkRestrictions(env: MessageHandlerEnvironment) {
@@ -136,6 +121,20 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
           val (replyId, expirationSec) = it.next()
           if (now().epochSecond > expirationSec) {
             bot.deleteMessage(fromId(chatId), replyId)
+            it.remove()
+          }
+        }
+      }
+    }.get()
+  }
+
+  fun checkRestrictions() {
+    restrictionsExecutor.submit {
+      for ((_, users) in restrictedUsers) {
+        val it = users.iterator()
+        while (it.hasNext()) {
+          val (_, expirationSecond) = it.next()
+          if (now().epochSecond > expirationSecond) {
             it.remove()
           }
         }
