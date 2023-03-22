@@ -68,7 +68,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
   }
 
   private fun sendTempMessage(chatId: Long, text: String, replyTo: Long? = null, parseMode: ParseMode? = null) {
-    val tempMessage = bot.sendMessage(fromId(chatId), text, replyToMessageId = replyTo)
+    val tempMessage = bot.sendMessage(fromId(chatId), text, replyToMessageId = replyTo, parseMode = parseMode)
     val tempMessageId = tempMessage.get().messageId
     markAsTemp(chatId, tempMessageId)
   }
@@ -90,8 +90,8 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
       for ((_, users) in restrictedUsers) {
         val it = users.iterator()
         while (it.hasNext()) {
-          val (_, expirationMillis) = it.next()
-          if (now().epochSecond >= expirationMillis) {
+          val (_, expirationSecond) = it.next()
+          if (now().epochSecond > expirationSecond) {
             it.remove()
           }
         }
@@ -134,7 +134,7 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
         val it = repliesIds.iterator()
         while (it.hasNext()) {
           val (replyId, expirationSec) = it.next()
-          if (now().epochSecond >= expirationSec) {
+          if (now().epochSecond > expirationSec) {
             bot.deleteMessage(fromId(chatId), replyId)
             it.remove()
           }
