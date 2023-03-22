@@ -115,30 +115,36 @@ class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restri
 
   fun cleanTempMessages() {
     tempMessagesExecutor.submit {
-      for ((chatId, repliesIds) in tempMessages) {
-        val it = repliesIds.iterator()
-        while (it.hasNext()) {
-          val (replyId, expirationSec) = it.next()
-          if (now().epochSecond > expirationSec) {
-            bot.deleteMessage(fromId(chatId), replyId)
-            it.remove()
-          }
-        }
-      }
+      val chatsCount = tempMessages.mappingCount()
+      tempMessages.forEach(chatsCount, ::cleanTempMessages)
     }.get()
+  }
+
+  private fun cleanTempMessages(chatId: Long, messagesToLifetimes: ConcurrentHashMap<Long, Long>) {
+    val it = messagesToLifetimes.iterator()
+    while (it.hasNext()) {
+      val (replyId, lifetimeUntil) = it.next()
+      if (lifetimeUntil < now().epochSecond) {
+        bot.deleteMessage(fromId(chatId), replyId)
+        it.remove()
+      }
+    }
+  }
+
+  private fun checkRestrictions(usersToUntilDate: ConcurrentHashMap<Long, Long>) {
+    val it = usersToUntilDate.iterator()
+    while (it.hasNext()) {
+      val (_, restrictedUntil) = it.next()
+      if (restrictedUntil < now().epochSecond) {
+        it.remove()
+      }
+    }
   }
 
   fun checkRestrictions() {
     restrictionsExecutor.submit {
-      for ((_, users) in restrictedUsers) {
-        val it = users.iterator()
-        while (it.hasNext()) {
-          val (_, expirationSecond) = it.next()
-          if (now().epochSecond > expirationSecond) {
-            it.remove()
-          }
-        }
-      }
+      val chatsCount = restrictedUsers.mappingCount()
+      restrictedUsers.forEachValue(chatsCount, this::checkRestrictions)
     }.get()
   }
 
