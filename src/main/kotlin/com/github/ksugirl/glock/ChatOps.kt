@@ -4,7 +4,6 @@ import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.github.kotlintelegrambot.entities.Message
-import com.github.ksugirl.glock.Utils.randomAnimation
 import java.io.Closeable
 import java.time.Instant.now
 import java.util.concurrent.ConcurrentHashMap
@@ -18,7 +17,8 @@ class ChatOps(
   private val chatId: ChatId,
   private val restrictions: ChatPermissions,
   private val restrictionsDurationSec: Int,
-  private val tempMessagesLifetimeSec: Int
+  private val tempMessagesLifetimeSec: Int,
+  private val shootingEmoji: Set<String>
 ) : Closeable {
 
   private val restrictionsExecutor = newSingleThreadExecutor()
@@ -88,7 +88,8 @@ class ChatOps(
   }
 
   private fun showAnimation(replyToId: Long) {
-    val message = bot.sendMessage(chatId, randomAnimation(), replyToMessageId = replyToId)
+    val emoji = shootingEmoji.random()
+    val message = bot.sendMessage(chatId, emoji, replyToMessageId = replyToId)
     val messageId = message.get().messageId
     markAsTemp(messageId)
   }
