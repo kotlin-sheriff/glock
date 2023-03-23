@@ -23,29 +23,23 @@ class ChatOps(
 
   private val restrictionsExecutor = newSingleThreadExecutor()
   private val usersToRestrictions = ConcurrentHashMap<Long, Long>()
-  private val messagesExecutor = newSingleThreadExecutor()
   private val messagesToLifetimes = ConcurrentHashMap<Long, Long>()
 
   fun cleanTempMessages() {
-    messagesExecutor.submit {
-      val it = messagesToLifetimes.iterator()
-      while (it.hasNext()) {
-        val (replyId, epochSecond) = it.next()
-        if (isLifetimeExceeded(epochSecond)) {
-          bot.deleteMessage(chatId, replyId)
-          it.remove()
-        }
+    for ((messageId, epochSecond) in messagesToLifetimes) {
+      if (isLifetimeExceeded(epochSecond)) {
+        bot.deleteMessage(chatId, messageId)
+        messagesToLifetimes.remove(messageId)
       }
-    }.get()
+    }
   }
 
   fun removeRestrictions() {
     restrictionsExecutor.submit {
-      val it = usersToRestrictions.iterator()
-      while (it.hasNext()) {
-        val (_, epochSecond) = it.next()
+      val restrictedUsersCount = usersToRestrictions.mappingCount()
+      usersToRestrictions.forEach(restrictedUsersCount) { userId, epochSecond ->
         if (isLifetimeExceeded(epochSecond)) {
-          it.remove()
+          usersToRestrictions.remove(userId)
         }
       }
     }.get()
@@ -95,13 +89,10 @@ class ChatOps(
   }
 
   private fun markAsTemp(messageId: Long) {
-    messagesExecutor.execute {
-      messagesToLifetimes[messageId] = now().epochSecond + tempMessagesLifetimeSec
-    }
+    messagesToLifetimes[messageId] = now().epochSecond + tempMessagesLifetimeSec
   }
 
   override fun close() {
-    messagesExecutor.close()
     restrictionsExecutor.close()
   }
 }

@@ -32,11 +32,11 @@ class GlockBot(
   private val idToChatOps = ConcurrentHashMap<Long, ChatOps>()
 
   private fun shoot(env: CommandHandlerEnvironment) {
-    env.message.forward(ChatOps::shoot)
+    apply(ChatOps::shoot, env.message)
   }
 
   private fun filter(env: MessageHandlerEnvironment) {
-    env.message.forward(ChatOps::filter)
+    apply(ChatOps::filter, env.message)
   }
 
   fun cleanTempMessages() {
@@ -59,11 +59,10 @@ class GlockBot(
     forEachChat(ChatOps::close)
   }
 
-  private fun Message.forward(process: ChatOps.(Message) -> Unit) {
+  private fun apply(process: ChatOps.(Message) -> Unit, message: Message) {
     startVirtualThread {
-      idToChatOps
-        .computeIfAbsent(chat.id, ::newChatOps)
-        .process(this)
+      val chatOps = idToChatOps.computeIfAbsent(message.chat.id, ::newChatOps)
+      chatOps.process(message)
     }
   }
 
