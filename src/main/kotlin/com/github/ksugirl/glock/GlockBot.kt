@@ -43,16 +43,12 @@ class GlockBot(
     forEachChat(ChatOps::cleanTempMessages)
   }
 
-  fun removeRestrictions() {
-    forEachChat(ChatOps::removeRestrictions)
+  fun processRestrictions() {
+    forEachChat(ChatOps::processRestrictions)
   }
 
   fun startPollingAsync() {
     startVirtualThread(bot::startPolling)
-  }
-
-  fun countChats(): Long {
-    return idToChatOps.mappingCount()
   }
 
   override fun close() {
@@ -76,7 +72,8 @@ class GlockBot(
     )
   }
 
-  private fun forEachChat(f: (ChatOps) -> Unit) {
-    idToChatOps.forEachValue(countChats(), f)
+  private fun forEachChat(process: (ChatOps) -> Unit) {
+    val chatsCount = idToChatOps.mappingCount()
+    idToChatOps.forEachValue(chatsCount, process)
   }
 }

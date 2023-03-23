@@ -26,23 +26,28 @@ class ChatOps(
   private val messagesToLifetimes = ConcurrentHashMap<Long, Long>()
 
   fun cleanTempMessages() {
-    for ((messageId, epochSecond) in messagesToLifetimes) {
-      if (isLifetimeExceeded(epochSecond)) {
-        bot.deleteMessage(chatId, messageId)
-        messagesToLifetimes.remove(messageId)
-      }
+    val tempMessagesCount = messagesToLifetimes.mappingCount()
+    messagesToLifetimes.forEach(tempMessagesCount, ::tryRemoveMessage)
+  }
+
+  private fun tryRemoveMessage(messageId: Long, epochSecond: Long) {
+    if (isLifetimeExceeded(epochSecond)) {
+      bot.deleteMessage(chatId, messageId)
+      messagesToLifetimes.remove(messageId)
     }
   }
 
-  fun removeRestrictions() {
+  fun processRestrictions() {
     restrictionsExecutor.submit {
       val restrictedUsersCount = usersToRestrictions.mappingCount()
-      usersToRestrictions.forEach(restrictedUsersCount) { userId, epochSecond ->
-        if (isLifetimeExceeded(epochSecond)) {
-          usersToRestrictions.remove(userId)
-        }
-      }
+      usersToRestrictions.forEach(restrictedUsersCount, ::processRestriction)
     }.get()
+  }
+
+  private fun processRestriction(userId: Long, epochSecond: Long) {
+    if(isLifetimeExceeded(epochSecond)) {
+      usersToRestrictions.remove(userId)
+    }
   }
 
   fun filter(message: Message) {

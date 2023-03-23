@@ -1,7 +1,6 @@
 package com.github.ksugirl.glock
 
 import com.github.kotlintelegrambot.entities.ChatPermissions
-import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
@@ -10,7 +9,6 @@ import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import java.util.concurrent.TimeUnit.HOURS
 import java.util.concurrent.TimeUnit.SECONDS
 
 @EnableScheduling
@@ -66,15 +64,8 @@ class GlockApplication {
   }
 
   @Scheduled(fixedDelay = 1, timeUnit = SECONDS)
-  fun removeRestrictions() {
-    glockBot().removeRestrictions()
-  }
-
-  @Scheduled(fixedDelay = 1, timeUnit = HOURS)
-  fun logNumberOfChats() {
-    val logger = getLogger(javaClass)
-    val count = glockBot().countChats()
-    logger.info("Number of chats: {}", count)
+  fun processRestrictions() {
+    glockBot().processRestrictions()
   }
 }
 
