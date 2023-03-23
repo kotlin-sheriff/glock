@@ -61,7 +61,7 @@ class GlockApplication {
 
   @Bean
   fun shootingEmoji(): Set<String> {
-    return setOf("💥", "💨", "🗯", "🔫", "🔪")
+    return setOf("💥", "🗯", "🔫", "🔪")
   }
 
   @Scheduled(fixedDelay = 2, timeUnit = SECONDS)
