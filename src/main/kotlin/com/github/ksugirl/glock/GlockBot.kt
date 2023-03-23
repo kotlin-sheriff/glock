@@ -8,147 +8,76 @@ import com.github.kotlintelegrambot.dispatcher.handlers.MessageHandlerEnvironmen
 import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.github.kotlintelegrambot.entities.ChatPermissions
-import com.github.kotlintelegrambot.entities.ParseMode
+import com.github.kotlintelegrambot.entities.Message
+import java.io.Closeable
 import java.lang.Thread.startVirtualThread
-import java.time.Duration
-import java.time.Instant.now
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors.newSingleThreadExecutor
 
-class GlockBot(apiKey: String, private val restrictions: ChatPermissions, restrictionsDuration: Duration) {
+class GlockBot(
+  apiKey: String,
+  private val restrictions: ChatPermissions,
+  private val restrictionsDurationSec: Int,
+  private val tempMessagesLifetimeSec: Int
+) : Closeable {
 
   private val bot =
     bot {
       token = apiKey
       dispatch {
         command("shoot", ::shoot)
-        message(::checkRestrictions)
+        message(::filter)
       }
     }
 
-  private val tempMessagesExecutor = newSingleThreadExecutor()
-
-  private val restrictionsExecutor = newSingleThreadExecutor()
-
-  private val tempMessageSec = 3
-
-  private val restrictionsDurationSec = restrictionsDuration.toSeconds()
-
-  private val tempMessages = ConcurrentHashMap<Long, ConcurrentHashMap<Long, Long>>()
-
-  private val restrictedUsers = ConcurrentHashMap<Long, ConcurrentHashMap<Long, Long>>()
+  private val idToChatOps = ConcurrentHashMap<Long, ChatOps>()
 
   private fun shoot(env: CommandHandlerEnvironment) {
-    val chatId = env.message.chat.id
-    val gunfighterId = env.message.from?.id ?: return
-    if (isRestricted(chatId, gunfighterId)) {
-      return
-    }
-    val gunfighterRequestId = env.message.messageId
-    markAsTemp(chatId, gunfighterRequestId)
-    val message = env.message.replyToMessage ?: return
-    val userId = message.from?.id ?: return
-    val messageId = message.messageId
-    restrictUser(chatId, userId)
-    val animation = setOf("💥", "💨", "🗯").random()
-    sendTempMessage(chatId, animation, replyTo = messageId)
+    env.message.forward(ChatOps::shoot)
   }
 
-  private fun restrictUser(chatId: Long, userId: Long) {
-    val untilDate = now().epochSecond + restrictionsDurationSec
-    bot.restrictChatMember(fromId(chatId), userId, restrictions, untilDate)
-    restrictionsExecutor.execute {
-      restrictedUsers.compute(chatId) { _, users ->
-        val restrictedUsers = users ?: ConcurrentHashMap()
-        restrictedUsers[userId] = untilDate
-        return@compute restrictedUsers
-      }
-    }
-  }
-
-  private fun sendTempMessage(chatId: Long, text: String, replyTo: Long? = null, parseMode: ParseMode? = null) {
-    val tempMessage = bot.sendMessage(fromId(chatId), text, replyToMessageId = replyTo, parseMode = parseMode)
-    val tempMessageId = tempMessage.get().messageId
-    markAsTemp(chatId, tempMessageId)
-  }
-
-
-  private fun markAsTemp(chatId: Long, messageId: Long) {
-    tempMessagesExecutor.execute {
-      tempMessages.compute(chatId) { _, replies ->
-        val tempReplies = replies ?: ConcurrentHashMap()
-        val untilDate = now().epochSecond + tempMessageSec
-        tempReplies[messageId] = untilDate
-        return@compute tempReplies
-      }
-    }
-  }
-
-  private fun checkRestrictions(env: MessageHandlerEnvironment) {
-    val user = env.message.from ?: return
-    val messageId = env.message.messageId
-    val chatId = env.message.chat.id
-    if (isTempMessage(chatId, messageId)) {
-      return
-    }
-    val userId = user.id
-    if (isRestricted(chatId, userId)) {
-      bot.deleteMessage(fromId(chatId), messageId)
-    }
-  }
-
-  private fun isTempMessage(chatId: Long, messageId: Long): Boolean {
-    val chatTempMessages = tempMessages[chatId] ?: return false
-    val lifetimeUntil = chatTempMessages[messageId]
-    return lifetimeUntil != null
-  }
-
-  private fun getRestrictionDateUntil(chatId: Long, userId: Long): Long? {
-    val chatRestrictions = restrictedUsers[chatId] ?: return null
-    return chatRestrictions[userId]
-  }
-
-  private fun isRestricted(chatId: Long, userId: Long): Boolean {
-    val restrictedUntil = getRestrictionDateUntil(chatId, userId)
-    return restrictedUntil != null && now().epochSecond <= restrictedUntil
+  private fun filter(env: MessageHandlerEnvironment) {
+    env.message.forward(ChatOps::filter)
   }
 
   fun cleanTempMessages() {
-    tempMessagesExecutor.submit {
-      val chatsCount = tempMessages.mappingCount()
-      tempMessages.forEach(chatsCount, ::cleanTempMessages)
-    }.get()
+    forEachChat(ChatOps::cleanTempMessages)
   }
 
-  private fun cleanTempMessages(chatId: Long, messagesToLifetimes: ConcurrentHashMap<Long, Long>) {
-    val it = messagesToLifetimes.iterator()
-    while (it.hasNext()) {
-      val (replyId, lifetimeUntil) = it.next()
-      if (lifetimeUntil < now().epochSecond) {
-        bot.deleteMessage(fromId(chatId), replyId)
-        it.remove()
-      }
-    }
-  }
-
-  private fun checkRestrictions(usersToUntilDate: ConcurrentHashMap<Long, Long>) {
-    val it = usersToUntilDate.iterator()
-    while (it.hasNext()) {
-      val (_, restrictedUntil) = it.next()
-      if (restrictedUntil < now().epochSecond) {
-        it.remove()
-      }
-    }
-  }
-
-  fun checkRestrictions() {
-    restrictionsExecutor.submit {
-      val chatsCount = restrictedUsers.mappingCount()
-      restrictedUsers.forEachValue(chatsCount, this::checkRestrictions)
-    }.get()
+  fun removeRestrictions() {
+    forEachChat(ChatOps::removeRestrictions)
   }
 
   fun startPollingAsync() {
     startVirtualThread(bot::startPolling)
+  }
+
+  fun countChats(): Long {
+    return idToChatOps.mappingCount()
+  }
+
+  override fun close() {
+    forEachChat(ChatOps::close)
+  }
+
+  private fun Message.forward(process: ChatOps.(Message) -> Unit) {
+    startVirtualThread {
+      idToChatOps
+        .computeIfAbsent(chat.id, ::newChatOps)
+        .process(this)
+    }
+  }
+
+  private fun newChatOps(chatId: Long): ChatOps {
+    return ChatOps(
+      bot,
+      fromId(chatId),
+      restrictions,
+      restrictionsDurationSec,
+      tempMessagesLifetimeSec
+    )
+  }
+
+  private fun forEachChat(f: (ChatOps) -> Unit) {
+    idToChatOps.forEachValue(countChats(), f)
   }
 }

@@ -1,6 +1,7 @@
 package com.github.ksugirl.glock
 
 import com.github.kotlintelegrambot.entities.ChatPermissions
+import org.slf4j.LoggerFactory.getLogger
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
@@ -9,7 +10,7 @@ import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import java.time.Duration.ofMinutes
+import java.util.concurrent.TimeUnit.HOURS
 import java.util.concurrent.TimeUnit.SECONDS
 
 @EnableScheduling
@@ -17,7 +18,13 @@ import java.util.concurrent.TimeUnit.SECONDS
 class GlockApplication {
 
   @Value("\${telegram.api.token}")
-  private lateinit var apiToken: String
+  private var apiToken = null as String?
+
+  @Value("\${restrictions.duration.sec:300}")
+  private var restrictionsDurationSec = null as Int?
+
+  @Value("\${temp.messages.lifetime.sec:3}")
+  private var tempMessagesLifetimeSec = null as Int?
 
   @Bean
   fun restrictions(): ChatPermissions {
@@ -42,7 +49,13 @@ class GlockApplication {
 
   @Bean
   fun glockBot(): GlockBot {
-    val bot = GlockBot(apiToken, restrictions(), ofMinutes(5))
+    val bot =
+      GlockBot(
+        requireNotNull(apiToken),
+        restrictions(),
+        requireNotNull(restrictionsDurationSec),
+        requireNotNull(tempMessagesLifetimeSec)
+      )
     bot.startPollingAsync()
     return bot
   }
@@ -53,8 +66,15 @@ class GlockApplication {
   }
 
   @Scheduled(fixedDelay = 1, timeUnit = SECONDS)
-  fun checkRestrictions() {
-    glockBot().checkRestrictions()
+  fun removeRestrictions() {
+    glockBot().removeRestrictions()
+  }
+
+  @Scheduled(fixedDelay = 1, timeUnit = HOURS)
+  fun logNumberOfChats() {
+    val logger = getLogger(javaClass)
+    val count = glockBot().countChats()
+    logger.info("Number of chats: {}", count)
   }
 }
 
