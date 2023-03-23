@@ -20,8 +20,8 @@ class GlockApplication {
   @Value("\${telegram.api.token}")
   private var apiToken = null as String?
 
-  @Value("\${restrictions.duration.sec:300}")
-  private var restrictionsDurationSec = null as Int?
+  @Value("\${restrictions.duration.sec}")
+  private var restrictionsDurationSec = 300
 
   @Value("\${temp.messages.lifetime.sec:3}")
   private var tempMessagesLifetimeSec = null as Int?

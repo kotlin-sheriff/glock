@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors.newSingleThreadExecutor
 
 /**
- * Класс для последовательных, безопасных, атомарных операций с отдельно взятым чатом
+ * Class for sequential, secure, atomic operations in a single chat
  */
 class ChatOps(
   private val bot: Bot,
