@@ -17,8 +17,7 @@ class ChatOps(
   private val chatId: ChatId,
   private val restrictions: ChatPermissions,
   private val restrictionsDurationSec: Int,
-  private val tempMessagesLifetimeSec: Int,
-  private val shootingEmoji: Set<String>
+  private val tempMessagesLifetimeSec: Int
 ) : Closeable {
 
   private val restrictionsExecutor = newSingleThreadExecutor()
@@ -88,8 +87,7 @@ class ChatOps(
   }
 
   private fun showAnimation(replyToId: Long) {
-    val emoji = shootingEmoji.random()
-    val message = bot.sendMessage(chatId, emoji, replyToMessageId = replyToId)
+    val message = bot.sendMessage(chatId, "💥", replyToMessageId = replyToId)
     val messageId = message.get().messageId
     markAsTemp(messageId)
   }

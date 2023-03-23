@@ -17,8 +17,7 @@ class GlockBot(
   apiKey: String,
   private val restrictions: ChatPermissions,
   private val restrictionsDurationSec: Int,
-  private val tempMessagesLifetimeSec: Int,
-  private val shootingEmoji: Set<String>
+  private val tempMessagesLifetimeSec: Int
 ) : Closeable {
 
   private val bot =
@@ -69,8 +68,7 @@ class GlockBot(
       fromId(chatId),
       restrictions,
       restrictionsDurationSec,
-      tempMessagesLifetimeSec,
-      shootingEmoji
+      tempMessagesLifetimeSec
     )
   }
 

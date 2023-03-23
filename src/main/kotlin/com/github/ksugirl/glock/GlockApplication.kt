@@ -52,16 +52,10 @@ class GlockApplication {
         requireNotNull(apiToken),
         restrictions(),
         requireNotNull(restrictionsDurationSec),
-        requireNotNull(tempMessagesLifetimeSec),
-        shootingEmoji()
+        requireNotNull(tempMessagesLifetimeSec)
       )
     bot.startPollingAsync()
     return bot
-  }
-
-  @Bean
-  fun shootingEmoji(): Set<String> {
-    return setOf("💥", "🗯", "🔫", "🔪")
   }
 
   @Scheduled(fixedDelay = 2, timeUnit = SECONDS)
