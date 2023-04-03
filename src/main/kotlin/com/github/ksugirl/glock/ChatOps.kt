@@ -70,7 +70,7 @@ class ChatOps(
     }
     markAsTemp(gunfighterMessage.messageId)
     val attackedMessage = gunfighterMessage.replyToMessage ?: return
-    muteTarget(attackedMessage)
+    muteTarget(attackedMessage, false)
   }
 
   fun buckshot(gunfighterMessage: Message) {
@@ -79,33 +79,35 @@ class ChatOps(
       return
     }
     markAsTemp(gunfighterMessage.messageId)
-    muteRandomsExclude(gunfighterId)
-  }
-
-  private fun muteRandomsExclude(gunfighterId: Long) {
     latestMessages
       .filter(exclude(gunfighterId))
       .take(nextInt(1, latestMessages.size))
-      .forEach(::muteTarget)
+      .forEach { muteTarget(it, true) }
   }
 
   private fun exclude(userId: Long): (Message) -> Boolean {
     return { it.from?.id != userId }
   }
 
-  private fun muteTarget(attackedMessage: Message) {
+  private fun muteTarget(attackedMessage: Message, isShotgun: Boolean) {
     val attackedId = attackedMessage.from?.id ?: return
-    restrictUser(attackedId)
+    restrictUser(attackedId, isShotgun)
     showAnimation(attackedMessage.messageId)
   }
 
-  private fun restrictUser(userId: Long) {
+  private fun restrictUser(userId: Long, fraction: Boolean) {
+    val restrictionsDurationSec =
+      when (fraction) {
+        true -> nextInt(30, restrictionsDurationSec + 1)
+        else -> restrictionsDurationSec
+      }
     val untilEpochSecond = now().epochSecond + restrictionsDurationSec
     bot.restrictChatMember(chatId, userId, restrictions, untilEpochSecond)
     restrictionsExecutor.execute {
       usersToRestrictions[userId] = untilEpochSecond
     }
   }
+
 
   private fun isRestricted(userId: Long): Boolean {
     val epochSecond = usersToRestrictions[userId]

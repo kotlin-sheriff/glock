@@ -11,6 +11,8 @@ import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.github.kotlintelegrambot.entities.Message
 import java.io.Closeable
 import java.lang.Thread.startVirtualThread
+import java.time.Duration
+import java.time.Duration.ofDays
 import java.util.concurrent.ConcurrentHashMap
 
 class GlockBot(
@@ -19,6 +21,13 @@ class GlockBot(
   private val restrictionsDurationSec: Int,
   private val tempMessagesLifetimeSec: Int
 ) : Closeable {
+
+  init {
+    require(restrictionsDurationSec in 30..ofDays(366).seconds) {
+      "If user is restricted for more than 366 days or less than 30 seconds from the current time," +
+        " they are considered to be restricted forever"
+    }
+  }
 
   private val bot =
     bot {
