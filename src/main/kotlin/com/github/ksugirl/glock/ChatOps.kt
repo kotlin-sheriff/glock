@@ -61,9 +61,15 @@ class ChatOps(
       return
     }
     latestMessages += message
+    val text = message.text ?: return
+    val maxCommandLength = 9
+    when (text.take(maxCommandLength).lowercase()) {
+      "/shoot" -> shootTrigger(message)
+      "/buckshot" -> buckshotTrigger(message)
+    }
   }
 
-  fun shoot(gunfighterMessage: Message) {
+  private fun shootTrigger(gunfighterMessage: Message) {
     val gunfighterId = gunfighterMessage.from?.id ?: return
     if (isRestricted(gunfighterId)) {
       return
@@ -73,7 +79,7 @@ class ChatOps(
     shootTarget(attackedMessage)
   }
 
-  fun buckshot(gunfighterMessage: Message) {
+  private fun buckshotTrigger(gunfighterMessage: Message) {
     val gunfighterId = gunfighterMessage.from?.id ?: return
     if (isRestricted(gunfighterId)) {
       return

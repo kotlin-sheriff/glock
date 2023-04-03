@@ -2,13 +2,10 @@ package com.github.ksugirl.glock
 
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
-import com.github.kotlintelegrambot.dispatcher.command
-import com.github.kotlintelegrambot.dispatcher.handlers.CommandHandlerEnvironment
 import com.github.kotlintelegrambot.dispatcher.handlers.MessageHandlerEnvironment
 import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.github.kotlintelegrambot.entities.ChatPermissions
-import com.github.kotlintelegrambot.entities.Message
 import java.io.Closeable
 import java.lang.Thread.startVirtualThread
 import java.time.Duration.ofDays
@@ -32,24 +29,19 @@ class GlockBot(
     bot {
       token = apiKey
       dispatch {
-        command("shoot", ::shoot)
-        command("buckshot", ::buckshot)
         message(::process)
       }
     }
 
   private val idToChatOps = ConcurrentHashMap<Long, ChatOps>()
 
-  private fun shoot(env: CommandHandlerEnvironment) {
-    apply(ChatOps::shoot, env.message)
-  }
-
-  private fun buckshot(env: CommandHandlerEnvironment) {
-    apply(ChatOps::buckshot, env.message)
-  }
-
   private fun process(env: MessageHandlerEnvironment) {
-    apply(ChatOps::process, env.message)
+    startVirtualThread {
+      val message = env.message
+      val chatId = message.chat.id
+      val chatOps = idToChatOps.computeIfAbsent(chatId, ::newChatOps)
+      chatOps.process(message)
+    }
   }
 
   fun cleanTempMessages() {
@@ -66,13 +58,6 @@ class GlockBot(
 
   override fun close() {
     forEachChat(ChatOps::close)
-  }
-
-  private fun apply(callMethodWith: ChatOps.(Message) -> Unit, message: Message) {
-    startVirtualThread {
-      val chatOps = idToChatOps.computeIfAbsent(message.chat.id, ::newChatOps)
-      chatOps.callMethodWith(message)
-    }
   }
 
   private fun newChatOps(chatId: Long): ChatOps {
