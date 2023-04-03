@@ -32,24 +32,24 @@ class GlockBot(
     bot {
       token = apiKey
       dispatch {
-        command("shoot", ::processShoot)
-        command("buckshot", ::processBuckshot)
-        message(::processMessage)
+        command("shoot", ::shoot)
+        command("buckshot", ::buckshot)
+        message(::process)
       }
     }
 
   private val idToChatOps = ConcurrentHashMap<Long, ChatOps>()
 
-  private fun processShoot(env: CommandHandlerEnvironment) {
-    apply(ChatOps::processShoot, env.message)
+  private fun shoot(env: CommandHandlerEnvironment) {
+    apply(ChatOps::shoot, env.message)
   }
 
-  private fun processBuckshot(env: CommandHandlerEnvironment) {
-    apply(ChatOps::processBuckshot, env.message)
+  private fun buckshot(env: CommandHandlerEnvironment) {
+    apply(ChatOps::buckshot, env.message)
   }
 
-  private fun processMessage(env: MessageHandlerEnvironment) {
-    apply(ChatOps::processMessage, env.message)
+  private fun process(env: MessageHandlerEnvironment) {
+    apply(ChatOps::process, env.message)
   }
 
   fun cleanTempMessages() {
@@ -68,10 +68,10 @@ class GlockBot(
     forEachChat(ChatOps::close)
   }
 
-  private fun apply(process: ChatOps.(Message) -> Unit, message: Message) {
+  private fun apply(callMethodWith: ChatOps.(Message) -> Unit, message: Message) {
     startVirtualThread {
       val chatOps = idToChatOps.computeIfAbsent(message.chat.id, ::newChatOps)
-      chatOps.process(message)
+      chatOps.callMethodWith(message)
     }
   }
 

@@ -53,7 +53,7 @@ class ChatOps(
     }
   }
 
-  fun processMessage(message: Message) {
+  fun process(message: Message) {
     val userId = message.from?.id ?: return
     if (isRestricted(userId)) {
       val messageId = message.messageId
@@ -63,17 +63,17 @@ class ChatOps(
     latestMessages += message
   }
 
-  fun processShoot(gunfighterMessage: Message) {
+  fun shoot(gunfighterMessage: Message) {
     val gunfighterId = gunfighterMessage.from?.id ?: return
     if (isRestricted(gunfighterId)) {
       return
     }
     markAsTemp(gunfighterMessage.messageId)
     val attackedMessage = gunfighterMessage.replyToMessage ?: return
-    shoot(attackedMessage)
+    shootTarget(attackedMessage)
   }
 
-  fun processBuckshot(gunfighterMessage: Message) {
+  fun buckshot(gunfighterMessage: Message) {
     val gunfighterId = gunfighterMessage.from?.id ?: return
     if (isRestricted(gunfighterId)) {
       return
@@ -82,18 +82,18 @@ class ChatOps(
     latestMessages
       .filter(exclude(gunfighterId))
       .take(nextInt(1, latestMessages.size))
-      .forEach(::buckshot)
+      .forEach(::buckshotTarget)
   }
 
   private fun exclude(userId: Long): (Message) -> Boolean {
     return { it.from?.id != userId }
   }
 
-  private fun shoot(message: Message) {
+  private fun shootTarget(message: Message) {
     muteTarget(message, false)
   }
 
-  private fun buckshot(message: Message) {
+  private fun buckshotTarget(message: Message) {
     muteTarget(message, true)
   }
 
