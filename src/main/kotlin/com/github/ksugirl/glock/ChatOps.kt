@@ -73,7 +73,7 @@ class ChatOps(
     muteTarget(attackedMessage)
   }
 
-  fun shot(gunfighterMessage: Message) {
+  fun buckshot(gunfighterMessage: Message) {
     val gunfighterId = gunfighterMessage.from?.id ?: return
     if (isRestricted(gunfighterId)) {
       return

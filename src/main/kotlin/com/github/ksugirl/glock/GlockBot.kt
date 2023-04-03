@@ -25,7 +25,7 @@ class GlockBot(
       token = apiKey
       dispatch {
         command("shoot", ::shoot)
-        command("shot", ::shot)
+        command("buckshot", ::buckshot)
         message(::process)
       }
     }
@@ -36,8 +36,8 @@ class GlockBot(
     apply(ChatOps::shoot, env.message)
   }
 
-  private fun shot(env: CommandHandlerEnvironment) {
-    apply(ChatOps::shot, env.message)
+  private fun buckshot(env: CommandHandlerEnvironment) {
+    apply(ChatOps::buckshot, env.message)
   }
 
   private fun process(env: MessageHandlerEnvironment) {
