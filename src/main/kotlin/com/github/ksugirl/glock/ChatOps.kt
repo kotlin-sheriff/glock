@@ -83,12 +83,10 @@ class ChatOps(
   }
 
   private fun muteRandomsExclude(gunfighterId: Long) {
-    if (latestMessages.isNotEmpty()) {
-      latestMessages
-        .filter(exclude(gunfighterId))
-        .take(nextInt(1, latestMessages.size))
-        .forEach(::muteTarget)
-    }
+    latestMessages
+      .filter(exclude(gunfighterId))
+      .take(nextInt(1, latestMessages.size))
+      .forEach(::muteTarget)
   }
 
   private fun exclude(userId: Long): (Message) -> Boolean {
