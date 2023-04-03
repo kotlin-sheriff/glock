@@ -11,7 +11,6 @@ import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.github.kotlintelegrambot.entities.Message
 import java.io.Closeable
 import java.lang.Thread.startVirtualThread
-import java.time.Duration
 import java.time.Duration.ofDays
 import java.util.concurrent.ConcurrentHashMap
 
@@ -33,24 +32,24 @@ class GlockBot(
     bot {
       token = apiKey
       dispatch {
-        command("shoot", ::shoot)
-        command("buckshot", ::buckshot)
-        message(::process)
+        command("shoot", ::processShoot)
+        command("buckshot", ::processBuckshot)
+        message(::processMessage)
       }
     }
 
   private val idToChatOps = ConcurrentHashMap<Long, ChatOps>()
 
-  private fun shoot(env: CommandHandlerEnvironment) {
-    apply(ChatOps::shoot, env.message)
+  private fun processShoot(env: CommandHandlerEnvironment) {
+    apply(ChatOps::processShoot, env.message)
   }
 
-  private fun buckshot(env: CommandHandlerEnvironment) {
-    apply(ChatOps::buckshot, env.message)
+  private fun processBuckshot(env: CommandHandlerEnvironment) {
+    apply(ChatOps::processBuckshot, env.message)
   }
 
-  private fun process(env: MessageHandlerEnvironment) {
-    apply(ChatOps::process, env.message)
+  private fun processMessage(env: MessageHandlerEnvironment) {
+    apply(ChatOps::processMessage, env.message)
   }
 
   fun cleanTempMessages() {
@@ -69,10 +68,10 @@ class GlockBot(
     forEachChat(ChatOps::close)
   }
 
-  private fun apply(use: ChatOps.(Message) -> Unit, message: Message) {
+  private fun apply(process: ChatOps.(Message) -> Unit, message: Message) {
     startVirtualThread {
       val chatOps = idToChatOps.computeIfAbsent(message.chat.id, ::newChatOps)
-      chatOps.use(message)
+      chatOps.process(message)
     }
   }
 

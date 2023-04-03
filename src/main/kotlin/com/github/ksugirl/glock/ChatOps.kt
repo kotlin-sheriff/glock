@@ -53,7 +53,7 @@ class ChatOps(
     }
   }
 
-  fun process(message: Message) {
+  fun processMessage(message: Message) {
     val userId = message.from?.id ?: return
     if (isRestricted(userId)) {
       val messageId = message.messageId
@@ -63,17 +63,17 @@ class ChatOps(
     latestMessages += message
   }
 
-  fun shoot(gunfighterMessage: Message) {
+  fun processShoot(gunfighterMessage: Message) {
     val gunfighterId = gunfighterMessage.from?.id ?: return
     if (isRestricted(gunfighterId)) {
       return
     }
     markAsTemp(gunfighterMessage.messageId)
     val attackedMessage = gunfighterMessage.replyToMessage ?: return
-    muteTarget(attackedMessage, false)
+    shoot(attackedMessage)
   }
 
-  fun buckshot(gunfighterMessage: Message) {
+  fun processBuckshot(gunfighterMessage: Message) {
     val gunfighterId = gunfighterMessage.from?.id ?: return
     if (isRestricted(gunfighterId)) {
       return
@@ -82,22 +82,30 @@ class ChatOps(
     latestMessages
       .filter(exclude(gunfighterId))
       .take(nextInt(1, latestMessages.size))
-      .forEach { muteTarget(it, true) }
+      .forEach(::buckshot)
   }
 
   private fun exclude(userId: Long): (Message) -> Boolean {
     return { it.from?.id != userId }
   }
 
-  private fun muteTarget(attackedMessage: Message, isShotgun: Boolean) {
+  private fun shoot(message: Message) {
+    muteTarget(message, false)
+  }
+
+  private fun buckshot(message: Message) {
+    muteTarget(message, true)
+  }
+
+  private fun muteTarget(attackedMessage: Message, randomDecrease: Boolean) {
     val attackedId = attackedMessage.from?.id ?: return
-    restrictUser(attackedId, isShotgun)
+    restrictUser(attackedId, randomDecrease)
     showAnimation(attackedMessage.messageId)
   }
 
-  private fun restrictUser(userId: Long, isShotgun: Boolean) {
+  private fun restrictUser(userId: Long, fraction: Boolean) {
     val restrictionsDurationSec =
-      when (isShotgun) {
+      when (fraction) {
         true -> nextInt(45, restrictionsDurationSec + 1)
         else -> restrictionsDurationSec
       }
