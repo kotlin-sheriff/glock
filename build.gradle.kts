@@ -18,6 +18,7 @@ repositories {
 }
 
 dependencies {
+  implementation("org.apache.commons:commons-collections4:4.4")
   implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.0.7")
   implementation("org.springframework.boot:spring-boot-starter")
   implementation("org.jetbrains.kotlin:kotlin-reflect")

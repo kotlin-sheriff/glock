@@ -25,7 +25,8 @@ class GlockBot(
       token = apiKey
       dispatch {
         command("shoot", ::shoot)
-        message(::filter)
+        command("shot", ::shot)
+        message(::process)
       }
     }
 
@@ -35,8 +36,12 @@ class GlockBot(
     apply(ChatOps::shoot, env.message)
   }
 
-  private fun filter(env: MessageHandlerEnvironment) {
-    apply(ChatOps::filter, env.message)
+  private fun shot(env: CommandHandlerEnvironment) {
+    apply(ChatOps::shot, env.message)
+  }
+
+  private fun process(env: MessageHandlerEnvironment) {
+    apply(ChatOps::process, env.message)
   }
 
   fun cleanTempMessages() {
@@ -55,10 +60,10 @@ class GlockBot(
     forEachChat(ChatOps::close)
   }
 
-  private fun apply(process: ChatOps.(Message) -> Unit, message: Message) {
+  private fun apply(use: ChatOps.(Message) -> Unit, message: Message) {
     startVirtualThread {
       val chatOps = idToChatOps.computeIfAbsent(message.chat.id, ::newChatOps)
-      chatOps.process(message)
+      chatOps.use(message)
     }
   }
 
