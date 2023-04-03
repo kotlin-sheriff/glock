@@ -95,10 +95,10 @@ class ChatOps(
     showAnimation(attackedMessage.messageId)
   }
 
-  private fun restrictUser(userId: Long, fraction: Boolean) {
+  private fun restrictUser(userId: Long, isShotgun: Boolean) {
     val restrictionsDurationSec =
-      when (fraction) {
-        true -> nextInt(30, restrictionsDurationSec + 1)
+      when (isShotgun) {
+        true -> nextInt(45, restrictionsDurationSec + 1)
         else -> restrictionsDurationSec
       }
     val untilEpochSecond = now().epochSecond + restrictionsDurationSec
