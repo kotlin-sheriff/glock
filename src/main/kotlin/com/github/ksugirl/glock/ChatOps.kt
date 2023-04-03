@@ -93,10 +93,10 @@ class ChatOps(
     return { it.from?.id != userId }
   }
 
-  private fun muteTarget(message: Message) {
-    val attackedId = message.from?.id ?: return
+  private fun muteTarget(attackedMessage: Message) {
+    val attackedId = attackedMessage.from?.id ?: return
     restrictUser(attackedId)
-    showAnimation(message.messageId)
+    showAnimation(attackedMessage.messageId)
   }
 
   private fun restrictUser(userId: Long) {
