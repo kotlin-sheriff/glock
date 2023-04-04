@@ -64,7 +64,7 @@ class ChatOps(
     if(isRestricted(message)) {
       return
     }
-    if(statuettes.get() <= 0) {
+    if(statuettes.get() < 1) {
       return
     }
     if(statuettes.decrementAndGet() < 0) {
