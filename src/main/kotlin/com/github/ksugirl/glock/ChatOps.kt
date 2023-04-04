@@ -72,7 +72,7 @@ class ChatOps(
   private fun glockTrigger(gunfighterMessage: Message) {
     markAsTemp(gunfighterMessage.messageId)
     val attackedMessage = gunfighterMessage.replyToMessage ?: return
-    shootTarget(attackedMessage)
+    shoot(attackedMessage)
   }
 
   private fun shotgunTrigger(gunfighterId: Long, gunfighterMessage: Message) {
@@ -80,40 +80,31 @@ class ChatOps(
     latestMessages
       .filter(exclude(gunfighterId))
       .take(nextInt(1, latestMessages.size))
-      .forEach(::buckshotTarget)
+      .forEach(::buckshot)
   }
 
   private fun exclude(userId: Long): (Message) -> Boolean {
     return { it.from?.id != userId }
   }
 
-  private fun shootTarget(message: Message) {
-    muteTarget(message, false)
+  private fun shoot(target: Message) {
+    mute(target, restrictionsDurationSec)
   }
 
-  private fun buckshotTarget(message: Message) {
-    muteTarget(message, true)
+  private fun buckshot(target: Message) {
+    val restrictionsDurationSec = nextInt(45, restrictionsDurationSec + 1)
+    mute(target, restrictionsDurationSec)
   }
 
-  private fun muteTarget(attackedMessage: Message, randomDecrease: Boolean) {
-    val attackedId = attackedMessage.from?.id ?: return
-    restrictUser(attackedId, randomDecrease)
-    showAnimation(attackedMessage.messageId)
-  }
-
-  private fun restrictUser(userId: Long, fraction: Boolean) {
-    val restrictionsDurationSec =
-      when (fraction) {
-        true -> nextInt(45, restrictionsDurationSec + 1)
-        else -> restrictionsDurationSec
-      }
+  private fun mute(target: Message, restrictionsDurationSec: Int) {
+    val userId = target.from?.id ?: return
     val untilEpochSecond = now().epochSecond + restrictionsDurationSec
     bot.restrictChatMember(chatId, userId, restrictions, untilEpochSecond)
     restrictionsExecutor.execute {
       usersToRestrictions[userId] = untilEpochSecond
     }
+    showAnimation(target.messageId)
   }
-
 
   private fun isRestricted(userId: Long): Boolean {
     val epochSecond = usersToRestrictions[userId]
