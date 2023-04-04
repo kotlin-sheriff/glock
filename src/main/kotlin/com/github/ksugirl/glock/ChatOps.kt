@@ -26,7 +26,7 @@ class ChatOps(
   private val restrictionsExecutor = newSingleThreadExecutor()
   private val usersToRestrictions = ConcurrentHashMap<Long, Long>()
   private val messagesToLifetimes = ConcurrentHashMap<Long, Long>()
-  private val latestMessages = synchronizedQueue(CircularFifoQueue<Message>(5))
+  private val latestMessages = synchronizedQueue(CircularFifoQueue<Message>(7))
 
   fun cleanTempMessages() {
     val tempMessagesCount = messagesToLifetimes.mappingCount()
@@ -78,10 +78,10 @@ class ChatOps(
   private fun buckshot(gunfighterId: Long, gunfighterMessage: Message) {
     markAsTemp(gunfighterMessage.messageId)
     val targetsCount = nextInt(1, latestMessages.size)
-    val targets = (0 until targetsCount).map { latestMessages.random() }
-    for (t in targets) {
+    for (t in 0 until targetsCount) {
+      val target = latestMessages.random()
       val restrictionsDurationSec = nextInt(45, restrictionsDurationSec + 1)
-      mute(t, restrictionsDurationSec)
+      mute(target, restrictionsDurationSec)
     }
   }
 
