@@ -34,11 +34,11 @@ class GlockBot(
     bot {
       token = apiKey
       dispatch {
+        message(handleMessage(ChatOps::filterMessage))
         command("shoot", handleCommand(ChatOps::shoot))
         command("buckshot", handleCommand(ChatOps::buckshot))
-        message(handleMessage(ChatOps::tryProcessStatuette))
         command("statuette", handleCommand(ChatOps::statuette))
-        message(handleMessage(ChatOps::filterMessage))
+        message(handleMessage(ChatOps::tryProcessStatuette))
       }
     }
 
