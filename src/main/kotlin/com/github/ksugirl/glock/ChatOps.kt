@@ -65,34 +65,42 @@ class ChatOps(
     val maxCommandLength = 9
     when (text.take(maxCommandLength).lowercase()) {
       "/shoot" -> shoot(message)
-      "/buckshot" -> buckshot(userId, message)
+      "/buckshot" -> buckshot(message)
+      "/statuette" -> statuette(message)
     }
   }
 
   private fun shoot(gunfighterMessage: Message) {
     markAsTemp(gunfighterMessage.messageId)
     val target = gunfighterMessage.replyToMessage ?: return
-    mute(target, restrictionsDurationSec)
+    mute(target, restrictionsDurationSec, "💥")
   }
 
-  private fun buckshot(gunfighterId: Long, gunfighterMessage: Message) {
+  private fun statuette(gunfighterMessage: Message) {
+    markAsTemp(gunfighterMessage.messageId)
+    val target = latestMessages.random()
+    mute(target, restrictionsDurationSec, "🗿")
+  }
+
+  private fun buckshot(gunfighterMessage: Message) {
     markAsTemp(gunfighterMessage.messageId)
     val targetsCount = nextInt(1, latestMessages.size)
-    for (t in 0 until targetsCount) {
+    for (t in 1..targetsCount) {
       val target = latestMessages.random()
       val restrictionsDurationSec = nextInt(45, restrictionsDurationSec + 1)
-      mute(target, restrictionsDurationSec)
+      val emoji = setOf("💥", "🗯️", "💨").random()
+      mute(target, restrictionsDurationSec, emoji)
     }
   }
 
-  private fun mute(target: Message, restrictionsDurationSec: Int) {
+  private fun mute(target: Message, restrictionsDurationSec: Int, emoji: String) {
     val userId = target.from?.id ?: return
     val untilEpochSecond = now().epochSecond + restrictionsDurationSec
     bot.restrictChatMember(chatId, userId, restrictions, untilEpochSecond)
     restrictionsExecutor.execute {
       usersToRestrictions[userId] = untilEpochSecond
     }
-    showAnimation(target.messageId)
+    showAnimation(target.messageId, emoji)
   }
 
   private fun isRestricted(userId: Long): Boolean {
@@ -104,8 +112,8 @@ class ChatOps(
     return epochSecond < now().epochSecond
   }
 
-  private fun showAnimation(replyToId: Long) {
-    val message = bot.sendMessage(chatId, "💥", replyToMessageId = replyToId)
+  private fun showAnimation(replyToId: Long, emoji: String) {
+    val message = bot.sendMessage(chatId, emoji, replyToMessageId = replyToId)
     val messageId = message.get().messageId
     markAsTemp(messageId)
   }
