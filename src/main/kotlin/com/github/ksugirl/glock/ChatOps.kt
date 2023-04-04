@@ -52,7 +52,7 @@ class ChatOps(
   }
 
   fun statuette(gunfighterMessage: Message) {
-    if(isRestricted(gunfighterMessage)) {
+    if (isRestricted(gunfighterMessage)) {
       return
     }
     markAsTemp(gunfighterMessage.messageId)
@@ -61,21 +61,17 @@ class ChatOps(
   }
 
   fun tryProcessStatuette(message: Message) {
-    if(isRestricted(message)) {
+    if (isRestricted(message)) {
       return
     }
-    if(statuettes.get() < 1) {
-      return
+    val statuettesCount = statuettes.get()
+    if (statuettesCount > 1 && statuettes.compareAndSet(statuettesCount, statuettesCount - 1)) {
+      mute(message, restrictionsDurationSec, "💥")
     }
-    if(statuettes.decrementAndGet() < 0) {
-      statuettes.incrementAndGet()
-      return
-    }
-    mute(message, restrictionsDurationSec, "💥")
   }
 
   fun buckshot(gunfighterMessage: Message) {
-    if(isRestricted(gunfighterMessage)) {
+    if (isRestricted(gunfighterMessage)) {
       return
     }
     markAsTemp(gunfighterMessage.messageId)
@@ -89,7 +85,7 @@ class ChatOps(
   }
 
   fun shoot(gunfighterMessage: Message) {
-    if(isRestricted(gunfighterMessage)) {
+    if (isRestricted(gunfighterMessage)) {
       return
     }
     markAsTemp(gunfighterMessage.messageId)

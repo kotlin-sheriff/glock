@@ -34,8 +34,8 @@ class GlockBot(
       dispatch {
         command("shoot", handleCommand(ChatOps::shoot))
         command("buckshot", handleCommand(ChatOps::buckshot))
-        command("statuette", handleCommand(ChatOps::statuette))
         message(handleMessage(ChatOps::tryProcessStatuette))
+        command("statuette", handleCommand(ChatOps::statuette))
         message(handleMessage(ChatOps::filterMessage))
       }
     }
