@@ -16,13 +16,7 @@ fun main() {
   startLoopWithFixedRate(ofSeconds(2), glockBot::cleanTempMessages)
 
   startLoopWithFixedRate(ofMinutes(1)) {
-    println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
-    for(chat in glockBot.uniqueChats.values) {
-      println("  ******************************")
-      for(record in chat.split("\n")) {
-        println("    $record")
-      }
-    }
+    println("Unique chats: ${glockBot.uniqueChats.size}")
   }
 }
 
