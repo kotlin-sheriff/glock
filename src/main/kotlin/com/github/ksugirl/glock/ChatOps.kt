@@ -10,6 +10,7 @@ import java.io.Closeable
 import java.time.Instant.now
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors.newSingleThreadExecutor
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
 
 /**
@@ -27,17 +28,11 @@ class ChatOps(
   private val usersToRestrictions = ConcurrentHashMap<Long, Long>()
   private val messagesToLifetimes = ConcurrentHashMap<Long, Long>()
   private val recentMessages = synchronizedQueue(CircularFifoQueue<Message>(7))
+  private val statuettes = AtomicInteger()
 
   fun cleanTempMessages() {
     val tempMessagesCount = messagesToLifetimes.mappingCount()
     messagesToLifetimes.forEach(tempMessagesCount, ::tryRemoveMessage)
-  }
-
-  private fun tryRemoveMessage(messageId: Long, epochSecond: Long) {
-    if (isLifetimeExceeded(epochSecond)) {
-      bot.deleteMessage(chatId, messageId)
-      messagesToLifetimes.remove(messageId)
-    }
   }
 
   fun processRestrictions() {
@@ -47,50 +42,78 @@ class ChatOps(
     }.get()
   }
 
+  fun filterMessage(message: Message) {
+    if (isRestricted(message)) {
+      val messageId = message.messageId
+      bot.deleteMessage(chatId, messageId)
+      return
+    }
+    recentMessages += message
+  }
+
+  fun statuette(gunfighterMessage: Message) {
+    if(isRestricted(gunfighterMessage)) {
+      return
+    }
+    markAsTemp(gunfighterMessage.messageId)
+    statuettes.incrementAndGet()
+    showAnimation(gunfighterMessage.messageId, "🗿")
+  }
+
+  fun tryProcessStatuette(message: Message) {
+    if(isRestricted(message)) {
+      return
+    }
+    if(statuettes.get() <= 0) {
+      return
+    }
+    if(statuettes.decrementAndGet() < 0) {
+      statuettes.incrementAndGet()
+      return
+    }
+    mute(message, restrictionsDurationSec, "💥")
+  }
+
+  fun buckshot(gunfighterMessage: Message) {
+    if(isRestricted(gunfighterMessage)) {
+      return
+    }
+    markAsTemp(gunfighterMessage.messageId)
+    val targetsCount = nextInt(1, recentMessages.size)
+    val emoji = setOf("💥", "🗯️", "💨")
+    for (t in 1..targetsCount) {
+      val target = recentMessages.random()
+      val restrictionsDurationSec = nextInt(45, restrictionsDurationSec + 1)
+      mute(target, restrictionsDurationSec, emoji.random())
+    }
+  }
+
+  fun shoot(gunfighterMessage: Message) {
+    if(isRestricted(gunfighterMessage)) {
+      return
+    }
+    markAsTemp(gunfighterMessage.messageId)
+    val target = gunfighterMessage.replyToMessage ?: return
+    mute(target, restrictionsDurationSec, "💥")
+  }
+
   private fun processRestriction(userId: Long, epochSecond: Long) {
     if (isLifetimeExceeded(epochSecond)) {
       usersToRestrictions.remove(userId)
     }
   }
 
-  fun process(message: Message) {
-    val userId = message.from?.id ?: return
-    if (isRestricted(userId)) {
-      val messageId = message.messageId
+  private fun tryRemoveMessage(messageId: Long, epochSecond: Long) {
+    if (isLifetimeExceeded(epochSecond)) {
       bot.deleteMessage(chatId, messageId)
-      return
-    }
-    recentMessages += message
-    val text = message.text ?: return
-    val maxCommandLength = 10
-    when (text.take(maxCommandLength)) {
-      "/shoot" -> shoot(message)
-      "/buckshot" -> buckshot(message)
-      "/statuette" -> statuette(message)
+      messagesToLifetimes.remove(messageId)
     }
   }
 
-  private fun shoot(gunfighterMessage: Message) {
-    markAsTemp(gunfighterMessage.messageId)
-    val target = gunfighterMessage.replyToMessage ?: return
-    mute(target, restrictionsDurationSec, "💥")
-  }
-
-  private fun statuette(gunfighterMessage: Message) {
-    markAsTemp(gunfighterMessage.messageId)
-    val target = recentMessages.random()
-    mute(target, restrictionsDurationSec, "🗿")
-  }
-
-  private fun buckshot(gunfighterMessage: Message) {
-    markAsTemp(gunfighterMessage.messageId)
-    val targetsCount = nextInt(1, recentMessages.size)
-    for (t in 1..targetsCount) {
-      val target = recentMessages.random()
-      val restrictionsDurationSec = nextInt(45, restrictionsDurationSec + 1)
-      val emoji = setOf("💥", "🗯️", "💨").random()
-      mute(target, restrictionsDurationSec, emoji)
-    }
+  private fun isRestricted(message: Message): Boolean {
+    val userId = message.from?.id ?: return false
+    val epochSecond = usersToRestrictions[userId]
+    return epochSecond != null && !isLifetimeExceeded(epochSecond)
   }
 
   private fun mute(target: Message, restrictionsDurationSec: Int, emoji: String) {
@@ -101,11 +124,6 @@ class ChatOps(
       usersToRestrictions[userId] = untilEpochSecond
     }
     showAnimation(target.messageId, emoji)
-  }
-
-  private fun isRestricted(userId: Long): Boolean {
-    val epochSecond = usersToRestrictions[userId]
-    return epochSecond != null && !isLifetimeExceeded(epochSecond)
   }
 
   private fun isLifetimeExceeded(epochSecond: Long): Boolean {

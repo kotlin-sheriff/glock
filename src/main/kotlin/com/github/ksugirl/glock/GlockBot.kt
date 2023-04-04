@@ -2,10 +2,13 @@ package com.github.ksugirl.glock
 
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
-import com.github.kotlintelegrambot.dispatcher.handlers.MessageHandlerEnvironment
+import com.github.kotlintelegrambot.dispatcher.command
+import com.github.kotlintelegrambot.dispatcher.handlers.HandleCommand
+import com.github.kotlintelegrambot.dispatcher.handlers.HandleMessage
 import com.github.kotlintelegrambot.dispatcher.message
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.github.kotlintelegrambot.entities.ChatPermissions
+import com.github.kotlintelegrambot.entities.Message
 import java.io.Closeable
 import java.lang.Thread.startVirtualThread
 import java.time.Duration.ofDays
@@ -29,20 +32,15 @@ class GlockBot(
     bot {
       token = apiKey
       dispatch {
-        message(::process)
+        command("shoot", handleCommand(ChatOps::shoot))
+        command("buckshot", handleCommand(ChatOps::buckshot))
+        command("statuette", handleCommand(ChatOps::statuette))
+        message(handleMessage(ChatOps::tryProcessStatuette))
+        message(handleMessage(ChatOps::filterMessage))
       }
     }
 
   private val idToChatOps = ConcurrentHashMap<Long, ChatOps>()
-
-  private fun process(env: MessageHandlerEnvironment) {
-    startVirtualThread {
-      val message = env.message
-      val chatId = message.chat.id
-      val chatOps = idToChatOps.computeIfAbsent(chatId, ::newChatOps)
-      chatOps.process(message)
-    }
-  }
 
   fun cleanTempMessages() {
     forEachChat(ChatOps::cleanTempMessages)
@@ -60,6 +58,10 @@ class GlockBot(
     forEachChat(ChatOps::close)
   }
 
+  private fun getChatOps(chatId: Long): ChatOps {
+    return idToChatOps.computeIfAbsent(chatId, ::newChatOps)
+  }
+
   private fun newChatOps(chatId: Long): ChatOps {
     return ChatOps(
       bot,
@@ -73,5 +75,23 @@ class GlockBot(
   private fun forEachChat(process: (ChatOps) -> Unit) {
     val chatsCount = idToChatOps.mappingCount()
     idToChatOps.forEachValue(chatsCount, process)
+  }
+
+  private fun handleMessage(method: ChatOps.(Message) -> Unit): HandleMessage {
+    return {
+      startVirtualThread(method, message)
+    }
+  }
+
+  private fun handleCommand(method: ChatOps.(Message) -> Unit): HandleCommand {
+    return {
+      startVirtualThread(method, message)
+    }
+  }
+
+  private fun startVirtualThread(method: ChatOps.(Message) -> Unit, message: Message) {
+    startVirtualThread {
+      getChatOps(message.chat.id).method(message)
+    }
   }
 }
