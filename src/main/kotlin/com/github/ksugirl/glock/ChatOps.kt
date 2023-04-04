@@ -76,7 +76,7 @@ class ChatOps(
     }
     markAsTemp(gunfighterMessage.messageId)
     val targetsCount = nextInt(1, recentMessages.size)
-    val emoji = setOf("💥", "🗯️", "💨")
+    val emoji = setOf("💥", "🗯️")
     for (t in 1..targetsCount) {
       val target = recentMessages.random()
       val restrictionsDurationSec = nextLong(45, restrictionsDuration.seconds + 1)
