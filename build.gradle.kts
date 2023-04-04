@@ -18,7 +18,6 @@ dependencies {
   implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.0.7")
   implementation("org.jetbrains.kotlin:kotlin-reflect")
   implementation("com.sksamuel.hoplite:hoplite-core:2.7.3")
-  implementation("com.sksamuel.hoplite:hoplite-yaml:2.7.3")
 }
 
 application {

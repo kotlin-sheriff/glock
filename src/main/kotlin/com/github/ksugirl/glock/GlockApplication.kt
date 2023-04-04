@@ -1,10 +1,7 @@
 package com.github.ksugirl.glock
 
 import java.lang.Thread.startVirtualThread
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.DurationUnit
-
+import java.time.Duration
 
 fun main() {
   val applicationFactory = ApplicationFactory()
@@ -12,11 +9,11 @@ fun main() {
 
   glockBot.startPollingAsync()
 
-  startLoopWithFixedRate(1.seconds) {
+  startLoopWithFixedRate(Duration.ofSeconds(1)) {
     glockBot.processRestrictions()
   }
 
-  startLoopWithFixedRate(2.seconds) {
+  startLoopWithFixedRate(Duration.ofSeconds(2)) {
     glockBot.cleanTempMessages()
   }
 }
@@ -24,7 +21,7 @@ fun main() {
 private fun startLoopWithFixedRate(every: Duration, action: () -> Unit) {
   startVirtualThread {
     while (!Thread.interrupted()) {
-      Thread.sleep(every.toLong(DurationUnit.MILLISECONDS))
+      Thread.sleep(every)
       action()
     }
   }
