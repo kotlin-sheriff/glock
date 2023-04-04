@@ -10,8 +10,8 @@ import java.io.Closeable
 import java.time.Duration
 import java.time.Instant.now
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors.newSingleThreadExecutor
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
 import kotlin.random.Random.Default.nextLong
 
@@ -30,7 +30,7 @@ class ChatOps(
   private val usersToRestrictions = ConcurrentHashMap<Long, Long>()
   private val messagesToLifetimes = ConcurrentHashMap<Long, Long>()
   private val recentMessages = synchronizedQueue(CircularFifoQueue<Message>(7))
-  private val statuettes = AtomicInteger()
+  private val statuettes = ConcurrentLinkedQueue<Long>()
 
   fun cleanTempMessages() {
     val tempMessagesCount = messagesToLifetimes.mappingCount()
@@ -57,19 +57,17 @@ class ChatOps(
     if (isRestricted(gunfighterMessage)) {
       return
     }
+    statuettes += reply(gunfighterMessage, "🗿")
     markAsTemp(gunfighterMessage.messageId)
-    statuettes.incrementAndGet()
-    showAnimation(gunfighterMessage.messageId, "🗿")
   }
 
   fun tryProcessStatuette(message: Message) {
     if (isRestricted(message)) {
       return
     }
-    val statuettesCount = statuettes.get()
-    if (statuettesCount > 0 && statuettes.compareAndSet(statuettesCount, statuettesCount - 1)) {
-      mute(message, restrictionsDuration.seconds, "💥")
-    }
+    val statuette = statuettes.poll() ?: return
+    bot.deleteMessage(chatId, statuette)
+    mute(message, restrictionsDuration.seconds, "💥")
   }
 
   fun buckshot(gunfighterMessage: Message) {
@@ -120,23 +118,26 @@ class ChatOps(
     bot.restrictChatMember(chatId, userId, restrictions, untilEpochSecond)
     restrictionsExecutor.execute {
       usersToRestrictions.compute(userId) { _, previousRestriction ->
-        when(previousRestriction == null || untilEpochSecond > previousRestriction) {
+        when (previousRestriction == null || untilEpochSecond > previousRestriction) {
           true -> untilEpochSecond
           else -> previousRestriction
         }
       }
     }
-    showAnimation(target.messageId, emoji)
+    reply(target, emoji, true)
   }
 
   private fun isLifetimeExceeded(epochSecond: Long): Boolean {
     return epochSecond < now().epochSecond
   }
 
-  private fun showAnimation(replyToId: Long, emoji: String) {
-    val message = bot.sendMessage(chatId, emoji, replyToMessageId = replyToId)
+  private fun reply(to: Message, emoji: String, isTemp: Boolean = false): Long {
+    val message = bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId)
     val messageId = message.get().messageId
-    markAsTemp(messageId)
+    if(isTemp) {
+      markAsTemp(messageId)
+    }
+    return messageId
   }
 
   private fun markAsTemp(messageId: Long) {
