@@ -7,11 +7,13 @@ import com.github.kotlintelegrambot.entities.Message
 import org.apache.commons.collections4.QueueUtils.synchronizedQueue
 import org.apache.commons.collections4.queue.CircularFifoQueue
 import java.io.Closeable
+import java.time.Duration
 import java.time.Instant.now
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors.newSingleThreadExecutor
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random.Default.nextInt
+import kotlin.random.Random.Default.nextLong
 
 /**
  * Class for sequential, secure, atomic operations in a single chat
@@ -20,8 +22,8 @@ class ChatOps(
   private val bot: Bot,
   private val chatId: ChatId,
   private val restrictions: ChatPermissions,
-  private val restrictionsDurationSec: Int,
-  private val tempMessagesLifetimeSec: Int
+  private val restrictionsDuration: Duration,
+  private val tempMessagesLifetime: Duration
 ) : Closeable {
 
   private val restrictionsExecutor = newSingleThreadExecutor()
@@ -66,7 +68,7 @@ class ChatOps(
     }
     val statuettesCount = statuettes.get()
     if (statuettesCount > 0 && statuettes.compareAndSet(statuettesCount, statuettesCount - 1)) {
-      mute(message, restrictionsDurationSec, "💥")
+      mute(message, restrictionsDuration.seconds, "💥")
     }
   }
 
@@ -79,7 +81,7 @@ class ChatOps(
     val emoji = setOf("💥", "🗯️", "💨")
     for (t in 1..targetsCount) {
       val target = recentMessages.random()
-      val restrictionsDurationSec = nextInt(45, restrictionsDurationSec + 1)
+      val restrictionsDurationSec = nextLong(45, restrictionsDuration.seconds + 1)
       mute(target, restrictionsDurationSec, emoji.random())
     }
   }
@@ -90,7 +92,7 @@ class ChatOps(
     }
     markAsTemp(gunfighterMessage.messageId)
     val target = gunfighterMessage.replyToMessage ?: return
-    mute(target, restrictionsDurationSec, "💥")
+    mute(target, restrictionsDuration.seconds, "💥")
   }
 
   private fun processRestriction(userId: Long, epochSecond: Long) {
@@ -112,7 +114,7 @@ class ChatOps(
     return epochSecond != null && !isLifetimeExceeded(epochSecond)
   }
 
-  private fun mute(target: Message, restrictionsDurationSec: Int, emoji: String) {
+  private fun mute(target: Message, restrictionsDurationSec: Long, emoji: String) {
     val userId = target.from?.id ?: return
     val untilEpochSecond = now().epochSecond + restrictionsDurationSec
     bot.restrictChatMember(chatId, userId, restrictions, untilEpochSecond)
@@ -138,7 +140,7 @@ class ChatOps(
   }
 
   private fun markAsTemp(messageId: Long) {
-    messagesToLifetimes[messageId] = now().epochSecond + tempMessagesLifetimeSec
+    messagesToLifetimes[messageId] = now().epochSecond + tempMessagesLifetime.seconds
   }
 
   override fun close() {
