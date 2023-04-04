@@ -47,10 +47,17 @@ class GlockBot(
 
   private val idToChatOps = ConcurrentHashMap<Long, ChatOps>()
 
-  val uniqueChats = ConcurrentLinkedQueue<Long>()
+  val uniqueChats = ConcurrentHashMap<Long, String>()
 
   private fun collectChat(env: MessageHandlerEnvironment) {
-    uniqueChats += env.message.chat.id
+    if (env.message.chat.type in setOf("group", "supergroup")) {
+      val invite = env.message.chat.inviteLink
+      val title = env.message.chat.title
+      val username = env.message.chat.username
+      val firstAndLastName = env.message.chat.firstName + " " + env.message.chat.lastName
+      val description = env.message.chat.description
+      uniqueChats[env.message.chat.id] = "$title\n$username\n$firstAndLastName\n$invite\n$description"
+    }
   }
 
   fun cleanTempMessages() {
