@@ -7,6 +7,7 @@ import com.github.kotlintelegrambot.dispatcher.handlers.HandleCommand
 import com.github.kotlintelegrambot.dispatcher.handlers.HandleMessage
 import com.github.kotlintelegrambot.dispatcher.handlers.MessageHandlerEnvironment
 import com.github.kotlintelegrambot.dispatcher.message
+import com.github.kotlintelegrambot.entities.Chat
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.github.kotlintelegrambot.entities.Message
@@ -17,6 +18,7 @@ import java.time.Duration.ofDays
 import java.time.Duration.ofSeconds
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.Executors.newSingleThreadExecutor
 
 class GlockBot(
   apiKey: String,
@@ -47,16 +49,36 @@ class GlockBot(
 
   private val idToChatOps = ConcurrentHashMap<Long, ChatOps>()
 
-  val uniqueChats = ConcurrentHashMap<Long, String>()
+  private val uniqueChats = ConcurrentLinkedQueue<Long>()
+
+  private val statsExecutor = newSingleThreadExecutor()
 
   private fun collectChat(env: MessageHandlerEnvironment) {
-    if (env.message.chat.type in setOf("group", "supergroup")) {
-      val invite = env.message.chat.inviteLink
-      val title = env.message.chat.title
-      val username = env.message.chat.username
-      val firstAndLastName = env.message.chat.firstName + " " + env.message.chat.lastName
-      val description = env.message.chat.description
-      uniqueChats[env.message.chat.id] = "$title\n$username\n$firstAndLastName\n$invite\n$description"
+    if (env.message.chat.id == env.message.from?.id) {
+      return
+    }
+    statsExecutor.execute {
+      if (env.message.chat.id in uniqueChats) {
+        return@execute
+      }
+      uniqueChats += env.message.chat.id
+      env.message.chat.printlnRecords()
+    }
+  }
+
+  private fun Chat.printlnRecords() {
+    println("*************************")
+    printlnChatRecord(inviteLink)
+    printlnChatRecord(title)
+    printlnChatRecord(username)
+    printlnChatRecord(firstName)
+    printlnChatRecord(lastName)
+    printlnChatRecord(description)
+  }
+
+  private fun printlnChatRecord(record: String?) {
+    if (record != null) {
+      println("  $record")
     }
   }
 
