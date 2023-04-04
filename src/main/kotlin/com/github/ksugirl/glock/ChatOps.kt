@@ -29,7 +29,7 @@ class ChatOps(
   private val restrictionsExecutor = newSingleThreadExecutor()
   private val usersToRestrictions = ConcurrentHashMap<Long, Long>()
   private val messagesToLifetimes = ConcurrentHashMap<Long, Long>()
-  private val recentMessages = synchronizedQueue(CircularFifoQueue<Message>(7))
+  private val recentMessages = synchronizedQueue(CircularFifoQueue<Message>(10))
   private val statuettes = ConcurrentLinkedQueue<Long>()
 
   fun cleanTempMessages() {
@@ -76,7 +76,7 @@ class ChatOps(
     }
     markAsTemp(gunfighterMessage.messageId)
     val targetsCount = nextInt(1, recentMessages.size)
-    val emoji = setOf("💥", "🗯️")
+    val emoji = setOf("💥", "🗯️", "⚡️")
     for (t in 1..targetsCount) {
       val target = recentMessages.random()
       val restrictionsDurationSec = nextLong(45, restrictionsDuration.seconds + 1)
