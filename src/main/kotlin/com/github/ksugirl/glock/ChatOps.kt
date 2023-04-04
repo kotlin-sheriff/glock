@@ -64,36 +64,29 @@ class ChatOps(
     val text = message.text ?: return
     val maxCommandLength = 9
     when (text.take(maxCommandLength).lowercase()) {
-      "/shoot" -> glockTrigger(message)
-      "/buckshot" -> shotgunTrigger(userId, message)
+      "/shoot" -> shoot(message)
+      "/buckshot" -> buckshot(userId, message)
     }
   }
 
-  private fun glockTrigger(gunfighterMessage: Message) {
+  private fun shoot(gunfighterMessage: Message) {
     markAsTemp(gunfighterMessage.messageId)
-    val attackedMessage = gunfighterMessage.replyToMessage ?: return
-    shoot(attackedMessage)
+    val target = gunfighterMessage.replyToMessage ?: return
+    mute(target, restrictionsDurationSec)
   }
 
-  private fun shotgunTrigger(gunfighterId: Long, gunfighterMessage: Message) {
+  private fun buckshot(gunfighterId: Long, gunfighterMessage: Message) {
     markAsTemp(gunfighterMessage.messageId)
-    latestMessages
-      .filter(exclude(gunfighterId))
-      .take(nextInt(1, latestMessages.size))
-      .forEach(::buckshot)
+    val targetsCount = nextInt(1, latestMessages.size)
+    val targets = latestMessages.filter(exclude(gunfighterId)).take(targetsCount)
+    for(t in targets) {
+      val restrictionsDurationSec = nextInt(45, restrictionsDurationSec + 1)
+      mute(t, restrictionsDurationSec)
+    }
   }
 
   private fun exclude(userId: Long): (Message) -> Boolean {
     return { it.from?.id != userId }
-  }
-
-  private fun shoot(target: Message) {
-    mute(target, restrictionsDurationSec)
-  }
-
-  private fun buckshot(target: Message) {
-    val restrictionsDurationSec = nextInt(45, restrictionsDurationSec + 1)
-    mute(target, restrictionsDurationSec)
   }
 
   private fun mute(target: Message, restrictionsDurationSec: Int) {
