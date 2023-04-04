@@ -117,7 +117,12 @@ class ChatOps(
     val untilEpochSecond = now().epochSecond + restrictionsDurationSec
     bot.restrictChatMember(chatId, userId, restrictions, untilEpochSecond)
     restrictionsExecutor.execute {
-      usersToRestrictions[userId] = untilEpochSecond
+      usersToRestrictions.compute(userId) { _, previousRestriction ->
+        when(previousRestriction == null || untilEpochSecond > previousRestriction) {
+          true -> untilEpochSecond
+          else -> previousRestriction
+        }
+      }
     }
     showAnimation(target.messageId, emoji)
   }
