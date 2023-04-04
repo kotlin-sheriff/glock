@@ -62,7 +62,7 @@ class ChatOps(
     }
     recentMessages += message
     val text = message.text ?: return
-    val maxCommandLength = 9
+    val maxCommandLength = 10
     when (text.take(maxCommandLength).lowercase()) {
       "/shoot" -> shoot(message)
       "/buckshot" -> buckshot(message)
