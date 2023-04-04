@@ -3,8 +3,14 @@ package com.github.ksugirl.glock
 import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addEnvironmentSource
+import java.time.Duration
 
 open class ApplicationFactory {
+  data class Config(
+    val telegramApiToken: String,
+    val restrictionsDuration: Duration = Duration.ofSeconds(60),
+    val tempMessagesLifetime: Duration = Duration.ofSeconds(3)
+  )
 
   open val config by lazy {
     ConfigLoaderBuilder.default()
@@ -26,7 +32,7 @@ open class ApplicationFactory {
 
   open val glockBot by lazy {
     GlockBot(
-      requireNotNull(config.telegramApiToken),
+      config.telegramApiToken,
       restrictions,
       config.restrictionsDuration,
       config.tempMessagesLifetime

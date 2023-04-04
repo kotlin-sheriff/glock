@@ -6,9 +6,7 @@ import java.time.Duration
 import java.time.Duration.ofSeconds
 
 fun main() {
-  val applicationFactory = ApplicationFactory()
-
-  val glockBot = applicationFactory.glockBot
+  val glockBot = ApplicationFactory().glockBot
 
   glockBot.startPollingAsync()
 
