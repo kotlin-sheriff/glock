@@ -4,7 +4,6 @@ import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addEnvironmentSource
 import com.sksamuel.hoplite.addFileSource
-import java.util.concurrent.Executors
 
 open class ApplicationFactory {
 
@@ -29,14 +28,10 @@ open class ApplicationFactory {
 
   open val glockBot by lazy {
     GlockBot(
-      requireNotNull(config.apiToken),
+      requireNotNull(config.telegramApiToken),
       restrictions,
       config.restrictionsDuration,
       config.tempMessagesLifetime
     )
-  }
-
-  open val schedulerExecutor by lazy {
-    Executors.newVirtualThreadPerTaskExecutor()
   }
 }

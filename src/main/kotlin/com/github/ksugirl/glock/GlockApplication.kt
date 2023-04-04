@@ -1,31 +1,32 @@
 package com.github.ksugirl.glock
 
+import java.lang.Thread.startVirtualThread
 import java.time.Duration
-import java.util.concurrent.ExecutorService
 
 
 fun main() {
   val applicationFactory = ApplicationFactory()
   val glockBot = applicationFactory.glockBot
-  val schedulerExecutor = applicationFactory.schedulerExecutor
   val config = applicationFactory.config
 
   glockBot.startPollingAsync()
 
-  schedulerExecutor.startLoopWithFixedRate(config.restrictionsDuration) {
+  startLoopWithFixedRate(config.restrictionsDuration) {
     glockBot.processRestrictions()
   }
 
-  schedulerExecutor.startLoopWithFixedRate(config.tempMessagesLifetime) {
+  startLoopWithFixedRate(config.tempMessagesLifetime) {
     glockBot.cleanTempMessages()
   }
 }
 
-private fun ExecutorService.startLoopWithFixedRate(every: Duration, action: () -> Unit) {
-  submit {
+private fun startLoopWithFixedRate(every: Duration, action: () -> Unit) {
+  startVirtualThread {
     while (!Thread.interrupted()) {
+      startVirtualThread {
+        action()
+      }
       Thread.sleep(every)
-      action()
     }
   }
 }
