@@ -65,7 +65,7 @@ class ChatOps(
       return
     }
     val statuettesCount = statuettes.get()
-    if (statuettesCount > 1 && statuettes.compareAndSet(statuettesCount, statuettesCount - 1)) {
+    if (statuettesCount > 0 && statuettes.compareAndSet(statuettesCount, statuettesCount - 1)) {
       mute(message, restrictionsDurationSec, "💥")
     }
   }
