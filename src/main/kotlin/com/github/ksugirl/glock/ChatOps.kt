@@ -26,7 +26,7 @@ class ChatOps(
   private val restrictionsExecutor = newSingleThreadExecutor()
   private val usersToRestrictions = ConcurrentHashMap<Long, Long>()
   private val messagesToLifetimes = ConcurrentHashMap<Long, Long>()
-  private val latestMessages = synchronizedQueue(CircularFifoQueue<Message>(7))
+  private val recentMessages = synchronizedQueue(CircularFifoQueue<Message>(7))
 
   fun cleanTempMessages() {
     val tempMessagesCount = messagesToLifetimes.mappingCount()
@@ -60,7 +60,7 @@ class ChatOps(
       bot.deleteMessage(chatId, messageId)
       return
     }
-    latestMessages += message
+    recentMessages += message
     val text = message.text ?: return
     val maxCommandLength = 9
     when (text.take(maxCommandLength).lowercase()) {
@@ -78,15 +78,15 @@ class ChatOps(
 
   private fun statuette(gunfighterMessage: Message) {
     markAsTemp(gunfighterMessage.messageId)
-    val target = latestMessages.random()
+    val target = recentMessages.random()
     mute(target, restrictionsDurationSec, "🗿")
   }
 
   private fun buckshot(gunfighterMessage: Message) {
     markAsTemp(gunfighterMessage.messageId)
-    val targetsCount = nextInt(1, latestMessages.size)
+    val targetsCount = nextInt(1, recentMessages.size)
     for (t in 1..targetsCount) {
-      val target = latestMessages.random()
+      val target = recentMessages.random()
       val restrictionsDurationSec = nextInt(45, restrictionsDurationSec + 1)
       val emoji = setOf("💥", "🗯️", "💨").random()
       mute(target, restrictionsDurationSec, emoji)
