@@ -78,8 +78,8 @@ class ChatOps(
   private fun buckshot(gunfighterId: Long, gunfighterMessage: Message) {
     markAsTemp(gunfighterMessage.messageId)
     val targetsCount = nextInt(1, latestMessages.size)
-    val targets = latestMessages.take(targetsCount)
-    for(t in targets) {
+    val targets = (0 until targetsCount).map { latestMessages.random() }
+    for (t in targets) {
       val restrictionsDurationSec = nextInt(45, restrictionsDurationSec + 1)
       mute(t, restrictionsDurationSec)
     }
