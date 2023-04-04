@@ -4,12 +4,13 @@ import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addEnvironmentSource
 import java.time.Duration
+import java.time.Duration.ofSeconds
 
 open class ApplicationFactory {
   data class Config(
     val telegramApiToken: String,
-    val restrictionsDuration: Duration = Duration.ofSeconds(60),
-    val tempMessagesLifetime: Duration = Duration.ofSeconds(3)
+    val restrictionsDuration: Duration = ofSeconds(60),
+    val tempMessagesLifetime: Duration = ofSeconds(3)
   )
 
   open val config by lazy {
