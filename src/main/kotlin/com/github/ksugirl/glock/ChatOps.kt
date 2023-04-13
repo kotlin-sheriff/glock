@@ -50,7 +50,6 @@ class ChatOps(
     }
     val target = message.replyToMessage ?: return
     val id = target.from?.id ?: return
-    usersToRestrictions.remove(id)
     bot.restrictChatMember(
       chatId, id, ChatPermissions(
         canSendMessages = true,
@@ -63,6 +62,9 @@ class ChatOps(
         canPinMessages = true
       )
     )
+    restrictionsExecutor.execute {
+      usersToRestrictions.remove(id)
+    }
   }
 
   fun filterMessage(message: Message) {
