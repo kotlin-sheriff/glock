@@ -44,27 +44,6 @@ class ChatOps(
     }.get()
   }
 
-  fun heal(message: Message) {
-    if (isRestricted(message)) {
-      return
-    }
-    val target = message.replyToMessage ?: return
-    val id = target.from?.id ?: return
-    usersToRestrictions.remove(id)
-    bot.restrictChatMember(
-      chatId, id, ChatPermissions(
-        canSendMessages = true,
-        canSendMediaMessages = true,
-        canSendPolls = true,
-        canSendOtherMessages = true,
-        canAddWebPagePreviews = true,
-        canChangeInfo = true,
-        canInviteUsers = true,
-        canPinMessages = true
-      )
-    )
-  }
-
   fun filterMessage(message: Message) {
     if (isRestricted(message)) {
       val messageId = message.messageId
@@ -155,7 +134,7 @@ class ChatOps(
   private fun reply(to: Message, emoji: String, isTemp: Boolean = false): Long {
     val message = bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId)
     val messageId = message.get().messageId
-    if (isTemp) {
+    if(isTemp) {
       markAsTemp(messageId)
     }
     return messageId

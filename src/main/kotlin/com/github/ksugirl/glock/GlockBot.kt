@@ -37,7 +37,6 @@ class GlockBot(
         command("shoot", handleCommand(ChatOps::shoot))
         command("buckshot", handleCommand(ChatOps::buckshot))
         command("statuette", handleCommand(ChatOps::statuette))
-        command("heal", handleCommand(ChatOps::heal))
         message(handleMessage(ChatOps::filterMessage))
         message(handleMessage(ChatOps::tryProcessStatuette))
       }
