@@ -134,6 +134,7 @@ class ChatOps(
     }
     markAsTemp(gunfighterMessage)
     val target = gunfighterMessage.replyToMessage ?: return
+    println("Message: ${target.text} Sign: ${target.authorSignature}")
     if(isTopic(target)) {
       return
     }
