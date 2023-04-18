@@ -33,7 +33,7 @@ class ChatOps(
   private val restrictionsExecutor = newSingleThreadExecutor()
   private val usersToRestrictions = ConcurrentHashMap<Long, Long>()
   private val messagesToLifetimes = ConcurrentHashMap<Long, Long>()
-  private val recentMessages = synchronizedQueue(CircularFifoQueue<Message>(10))
+  private val recentMessages = synchronizedQueue(CircularFifoQueue<Message>(12))
   private val statuettes = ConcurrentLinkedQueue<Long>()
 
   fun cleanTempMessages() {
@@ -56,28 +56,30 @@ class ChatOps(
     }
     recentMessages += message
   }
-  
+
   fun heal(healerMessage: Message, args: List<String>) {
-    if(isRestricted(healerMessage)) {
+    if (isRestricted(healerMessage)) {
       return
     }
     markAsTemp(healerMessage)
     val target = healerMessage.replyToMessage ?: return
     val targetId = target.from?.id ?: return
     val magicCode = extractMagicCode(args) ?: return
-    if(!isHealingCode(magicCode)) {
+    if (!isHealingCode(magicCode)) {
       return
     }
-    bot.restrictChatMember(chatId, targetId, ChatPermissions(
-      canSendMessages = true,
-      canSendMediaMessages = true,
-      canSendPolls = true,
-      canSendOtherMessages = true,
-      canAddWebPagePreviews = true,
-      canChangeInfo = true,
-      canInviteUsers = true,
-      canPinMessages = true
-    ))
+    bot.restrictChatMember(
+      chatId, targetId, ChatPermissions(
+        canSendMessages = true,
+        canSendMediaMessages = true,
+        canSendPolls = true,
+        canSendOtherMessages = true,
+        canAddWebPagePreviews = true,
+        canChangeInfo = true,
+        canInviteUsers = true,
+        canPinMessages = true
+      )
+    )
     restrictionsExecutor.execute {
       usersToRestrictions.remove(targetId)
     }
@@ -119,12 +121,15 @@ class ChatOps(
       return
     }
     markAsTemp(gunfighterMessage)
+    if (recentMessages.isEmpty()) {
+      return
+    }
     val emoji = setOf("💥", "🗯️", "⚡️")
-    if(recentMessages.size == 1) {
+    if (recentMessages.size == 1) {
       mute(recentMessages.random(), restrictionsDuration.seconds, emoji.random())
       return
     }
-    val targetsCount = nextInt(1, recentMessages.size)
+    val targetsCount = nextInt(2, recentMessages.size + 1)
     for (t in 1..targetsCount) {
       val target = recentMessages.random()
       val restrictionsDurationSec = nextLong(45, restrictionsDuration.seconds * 2 + 1)
@@ -161,11 +166,13 @@ class ChatOps(
   }
 
   private fun isTopic(message: Message): Boolean {
-    return message.authorSignature != null || message.forwardSignature != null
+    return message.chat.type == "channel"
+      || message.authorSignature != null
+      || message.forwardSignature != null
   }
 
   private fun mute(target: Message, restrictionsDurationSec: Long, emoji: String) {
-    if(isTopic(target)) {
+    if (isTopic(target)) {
       return
     }
     val userId = target.from?.id ?: return
@@ -189,7 +196,7 @@ class ChatOps(
 
   private fun reply(to: Message, emoji: String, isTemp: Boolean = false): Long {
     val message = bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId).get()
-    if(isTemp) {
+    if (isTemp) {
       markAsTemp(message)
     }
     return message.messageId
