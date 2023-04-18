@@ -61,7 +61,7 @@ class ChatOps(
     if(isRestricted(healerMessage)) {
       return
     }
-    markAsTemp(healerMessage.messageId)
+    markAsTemp(healerMessage)
     val target = healerMessage.replyToMessage ?: return
     val targetId = target.from?.id ?: return
     val magicCode = extractMagicCode(args) ?: return
@@ -102,7 +102,7 @@ class ChatOps(
       return
     }
     statuettes += reply(gunfighterMessage, "🗿")
-    markAsTemp(gunfighterMessage.messageId)
+    markAsTemp(gunfighterMessage)
   }
 
   fun tryProcessStatuette(message: Message) {
@@ -118,7 +118,7 @@ class ChatOps(
     if (isRestricted(gunfighterMessage)) {
       return
     }
-    markAsTemp(gunfighterMessage.messageId)
+    markAsTemp(gunfighterMessage)
     val targetsCount = nextInt(1, recentMessages.size)
     val emoji = setOf("💥", "🗯️", "⚡️")
     for (t in 1..targetsCount) {
@@ -132,7 +132,7 @@ class ChatOps(
     if (isRestricted(gunfighterMessage)) {
       return
     }
-    markAsTemp(gunfighterMessage.messageId)
+    markAsTemp(gunfighterMessage)
     val target = gunfighterMessage.replyToMessage ?: return
     if(isChannelPost(target)) {
       return
@@ -178,7 +178,7 @@ class ChatOps(
       }
     }
     reply(target, emoji, true)
-    markAsTemp(target.messageId)
+    markAsTemp(target)
   }
 
   private fun isLifetimeExceeded(epochSecond: Long): Boolean {
@@ -186,16 +186,15 @@ class ChatOps(
   }
 
   private fun reply(to: Message, emoji: String, isTemp: Boolean = false): Long {
-    val message = bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId)
-    val messageId = message.get().messageId
+    val message = bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId).get()
     if(isTemp) {
-      markAsTemp(messageId)
+      markAsTemp(message)
     }
-    return messageId
+    return message.messageId
   }
 
-  private fun markAsTemp(messageId: Long) {
-    messagesToLifetimes[messageId] = now().epochSecond + tempMessagesLifetime.seconds
+  private fun markAsTemp(message: Message) {
+    messagesToLifetimes[message.messageId] = now().epochSecond + tempMessagesLifetime.seconds
   }
 
   override fun close() {
