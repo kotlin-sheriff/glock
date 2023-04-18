@@ -169,6 +169,7 @@ class ChatOps(
       }
     }
     reply(target, emoji, true)
+    markAsTemp(target.messageId)
   }
 
   private fun isLifetimeExceeded(epochSecond: Long): Boolean {
