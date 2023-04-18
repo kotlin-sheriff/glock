@@ -105,7 +105,10 @@ class ChatOps(
     if (isRestricted(gunfighterMessage)) {
       return
     }
-    statuettes += reply(gunfighterMessage, "🗿")
+    val statuetteId = reply(gunfighterMessage, "🗿")
+    if (statuetteId != null) {
+      statuettes += statuetteId
+    }
     markAsTemp(gunfighterMessage)
   }
 
@@ -196,8 +199,13 @@ class ChatOps(
     return epochSecond < now().epochSecond
   }
 
-  private fun reply(to: Message, emoji: String, isTemp: Boolean = false): Long {
-    val message = bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId).get()
+  private fun reply(to: Message, emoji: String, isTemp: Boolean = false): Long? {
+    val message =
+      try {
+        bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId).get()
+      } catch (e: IllegalStateException) {
+        return null
+      }
     if (isTemp) {
       markAsTemp(message)
     }
