@@ -5,10 +5,13 @@ import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addEnvironmentSource
 import java.time.Duration
 import java.time.Duration.ofSeconds
+import java.time.ZoneId
 
 open class ApplicationFactory {
   data class Config(
     val telegramApiToken: String,
+    val healingConstant: Long,
+    val healingTimeZone: ZoneId,
     val restrictionsDuration: Duration = ofSeconds(60),
     val tempMessagesLifetime: Duration = ofSeconds(3)
   )
@@ -36,7 +39,9 @@ open class ApplicationFactory {
       config.telegramApiToken,
       restrictions,
       config.restrictionsDuration,
-      config.tempMessagesLifetime
+      config.tempMessagesLifetime,
+      config.healingConstant,
+      config.healingTimeZone
     )
   }
 }

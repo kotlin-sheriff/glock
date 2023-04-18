@@ -10,6 +10,7 @@ import java.io.Closeable
 import java.time.Duration
 import java.time.Instant.now
 import java.time.LocalTime
+import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors.newSingleThreadExecutor
@@ -24,7 +25,9 @@ class ChatOps(
   private val chatId: ChatId,
   private val restrictions: ChatPermissions,
   private val restrictionsDuration: Duration,
-  private val tempMessagesLifetime: Duration
+  private val tempMessagesLifetime: Duration,
+  private val healingConstant: Long,
+  private val healingTimeZone: ZoneId
 ) : Closeable {
 
   private val restrictionsExecutor = newSingleThreadExecutor()
@@ -58,14 +61,12 @@ class ChatOps(
     if(isRestricted(healerMessage)) {
       return
     }
-    val magicCode = args.singleOrNull()?.toInt() ?: return
-    val time = LocalTime.now()
-    val verification = "${time.hour}${time.minute}".toInt() * 7
-    if (magicCode != verification) {
-      return
-    }
     val target = healerMessage.replyToMessage ?: return
     val targetId = target.from?.id ?: return
+    val magicCode = extractMagicCode(args) ?: return
+    if(!isHealingCode(magicCode)) {
+      return
+    }
     bot.restrictChatMember(chatId, targetId, ChatPermissions(
       canSendMessages = true,
       canSendMediaMessages = true,
@@ -81,6 +82,18 @@ class ChatOps(
     }
     val emoji = setOf("💊", "💉", "🚑")
     reply(target, emoji.random(), true)
+  }
+
+  private fun extractMagicCode(args: List<String>): Long? {
+    return args.singleOrNull()?.toLong()
+  }
+
+  private fun isHealingCode(code: Long): Boolean {
+    val time = LocalTime.now(healingTimeZone)
+    val hour = time.hour
+    val minute = time.minute
+    val verification = "${hour}${minute}".toLong() * healingConstant
+    return code == verification
   }
 
   fun statuette(gunfighterMessage: Message) {

@@ -14,13 +14,16 @@ import java.lang.Thread.startVirtualThread
 import java.time.Duration
 import java.time.Duration.ofDays
 import java.time.Duration.ofSeconds
+import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
 
 class GlockBot(
   apiKey: String,
   private val restrictions: ChatPermissions,
   private val restrictionsDuration: Duration,
-  private val tempMessagesLifetime: Duration
+  private val tempMessagesLifetime: Duration,
+  private val healingConstant: Long,
+  private val healingTimeZone: ZoneId
 ) : Closeable {
 
   init {
@@ -71,7 +74,9 @@ class GlockBot(
       fromId(chatId),
       restrictions,
       restrictionsDuration,
-      tempMessagesLifetime
+      tempMessagesLifetime,
+      healingConstant,
+      healingTimeZone
     )
   }
 
