@@ -64,6 +64,7 @@ class ChatOps(
     val target = healerMessage.replyToMessage ?: return
     val targetId = target.from?.id ?: return
     val magicCode = extractMagicCode(args) ?: return
+    markAsTemp(healerMessage.messageId)
     if(!isHealingCode(magicCode)) {
       return
     }
