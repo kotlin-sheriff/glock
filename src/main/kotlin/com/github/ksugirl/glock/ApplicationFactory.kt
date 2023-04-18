@@ -12,7 +12,7 @@ open class ApplicationFactory {
   data class Config(
     val telegramApiToken: String,
     val healingConstant: Long,
-    val healingTimeZone: ZoneOffset,
+    val healingTimeZone: String,
     val restrictionsDuration: Duration = ofSeconds(60),
     val tempMessagesLifetime: Duration = ofSeconds(3)
   )
@@ -42,7 +42,7 @@ open class ApplicationFactory {
       config.restrictionsDuration,
       config.tempMessagesLifetime,
       config.healingConstant,
-      config.healingTimeZone
+      ZoneId.of(config.healingTimeZone)
     )
   }
 }
