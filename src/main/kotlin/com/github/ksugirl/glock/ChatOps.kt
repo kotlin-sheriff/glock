@@ -9,6 +9,7 @@ import org.apache.commons.collections4.queue.CircularFifoQueue
 import java.io.Closeable
 import java.time.Duration
 import java.time.Instant.now
+import java.time.LocalTime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors.newSingleThreadExecutor
@@ -51,6 +52,35 @@ class ChatOps(
       return
     }
     recentMessages += message
+  }
+  
+  fun heal(healerMessage: Message, args: List<String>) {
+    if(isRestricted(healerMessage)) {
+      return
+    }
+    val magicCode = args.singleOrNull()?.toInt() ?: return
+    val time = LocalTime.now()
+    val verification = "${time.hour}${time.minute}${time.second}".toInt() * 7
+    if (magicCode != verification) {
+      return
+    }
+    val target = healerMessage.replyToMessage ?: return
+    val targetId = target.from?.id ?: return
+    bot.restrictChatMember(chatId, targetId, ChatPermissions(
+      canSendMessages = true,
+      canSendMediaMessages = true,
+      canSendPolls = true,
+      canSendOtherMessages = true,
+      canAddWebPagePreviews = true,
+      canChangeInfo = true,
+      canInviteUsers = true,
+      canPinMessages = true
+    ))
+    restrictionsExecutor.execute {
+      usersToRestrictions.remove(targetId)
+    }
+    val emoji = setOf("💊", "💉", "🚑")
+    reply(target, emoji.random(), true)
   }
 
   fun statuette(gunfighterMessage: Message) {

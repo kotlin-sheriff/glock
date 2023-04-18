@@ -37,6 +37,7 @@ class GlockBot(
         command("shoot", handleCommand(ChatOps::shoot))
         command("buckshot", handleCommand(ChatOps::buckshot))
         command("statuette", handleCommand(ChatOps::statuette))
+        command("heal", handleCommand(ChatOps::heal))
         message(handleMessage(ChatOps::filterMessage))
         message(handleMessage(ChatOps::tryProcessStatuette))
       }
@@ -85,6 +86,12 @@ class GlockBot(
     }
   }
 
+  private fun handleCommand(method: ChatOps.(Message, List<String>) -> Unit): HandleCommand {
+    return {
+      startVirtualThread(method, message, args)
+    }
+  }
+
   private fun handleCommand(method: ChatOps.(Message) -> Unit): HandleCommand {
     return {
       startVirtualThread(method, message)
@@ -94,6 +101,16 @@ class GlockBot(
   private fun startVirtualThread(method: ChatOps.(Message) -> Unit, message: Message) {
     startVirtualThread {
       getChatOps(message.chat.id).method(message)
+    }
+  }
+
+  private fun startVirtualThread(
+    method: ChatOps.(Message, List<String>) -> Unit,
+    message: Message,
+    args: List<String>
+  ) {
+    startVirtualThread {
+      getChatOps(message.chat.id).method(message, args)
     }
   }
 }
