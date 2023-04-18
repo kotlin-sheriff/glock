@@ -60,7 +60,7 @@ class ChatOps(
     }
     val magicCode = args.singleOrNull()?.toInt() ?: return
     val time = LocalTime.now()
-    val verification = "${time.hour}${time.minute}${time.second}".toInt() * 7
+    val verification = "${time.hour}${time.minute}".toInt() * 7
     if (magicCode != verification) {
       return
     }
