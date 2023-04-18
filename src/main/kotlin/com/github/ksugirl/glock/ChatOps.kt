@@ -134,7 +134,7 @@ class ChatOps(
     }
     markAsTemp(gunfighterMessage)
     val target = gunfighterMessage.replyToMessage ?: return
-    if(isChannelPost(target)) {
+    if(isTopic(target)) {
       return
     }
     mute(target, restrictionsDuration.seconds, "💥")
@@ -159,7 +159,7 @@ class ChatOps(
     return epochSecond != null && !isLifetimeExceeded(epochSecond)
   }
 
-  private fun isChannelPost(message: Message): Boolean {
+  private fun isTopic(message: Message): Boolean {
     val authorId = message.from?.id ?: return false
     val linkedChatId = message.chat.linkedChatId ?: return false
     return authorId == linkedChatId
