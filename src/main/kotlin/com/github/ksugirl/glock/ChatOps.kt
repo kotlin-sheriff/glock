@@ -166,7 +166,6 @@ class ChatOps(
 
   private fun mute(target: Message, restrictionsDurationSec: Long, emoji: String) {
     if(isTopic(target)) {
-      println("Topic message is not allowed to be muted: ${target.text}\nBecause signs: ${target.authorSignature} ${target.forwardSignature}")
       return
     }
     val userId = target.from?.id ?: return
