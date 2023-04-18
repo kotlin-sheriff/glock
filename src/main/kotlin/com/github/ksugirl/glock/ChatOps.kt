@@ -61,11 +61,11 @@ class ChatOps(
     if (isRestricted(healerMessage)) {
       return
     }
-    markAsTemp(healerMessage)
     val target = healerMessage.replyToMessage ?: return
     val targetId = target.from?.id ?: return
     val magicCode = extractMagicCode(args) ?: return
     if (!isHealingCode(magicCode)) {
+      markAsTemp(healerMessage)
       return
     }
     bot.restrictChatMember(
@@ -85,6 +85,7 @@ class ChatOps(
     }
     val emoji = setOf("💊", "💉", "🚑")
     reply(target, emoji.random(), true)
+    markAsTemp(healerMessage)
   }
 
   private fun extractMagicCode(args: List<String>): Long? {
@@ -125,13 +126,14 @@ class ChatOps(
     if (isRestricted(gunfighterMessage)) {
       return
     }
-    markAsTemp(gunfighterMessage)
     if (recentMessages.isEmpty()) {
+      markAsTemp(gunfighterMessage)
       return
     }
     val emoji = setOf("💥", "🗯️", "⚡️")
     if (recentMessages.size == 1) {
       mute(recentMessages.random(), restrictionsDuration.seconds, emoji.random())
+      markAsTemp(gunfighterMessage)
       return
     }
     val targetsCount = nextInt(2, recentMessages.size + 1)
@@ -140,15 +142,16 @@ class ChatOps(
       val restrictionsDurationSec = nextLong(45, restrictionsDuration.seconds * 2 + 1)
       mute(target, restrictionsDurationSec, emoji.random())
     }
+    markAsTemp(gunfighterMessage)
   }
 
   fun shoot(gunfighterMessage: Message) {
     if (isRestricted(gunfighterMessage)) {
       return
     }
-    markAsTemp(gunfighterMessage)
     val target = gunfighterMessage.replyToMessage ?: return
     mute(target, restrictionsDuration.seconds, "💥")
+    markAsTemp(gunfighterMessage)
   }
 
   private fun processRestriction(userId: Long, epochSecond: Long) {
