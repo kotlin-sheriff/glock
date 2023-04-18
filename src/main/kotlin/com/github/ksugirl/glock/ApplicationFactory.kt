@@ -11,8 +11,8 @@ import java.time.ZoneOffset
 open class ApplicationFactory {
   data class Config(
     val telegramApiToken: String,
-    val healingConstant: Long,
-    val healingTimeZone: String,
+    val healingConstant: Long = 7,
+    val healingTimeZone: String = "Asia/Jerusalem",
     val restrictionsDuration: Duration = ofSeconds(60),
     val tempMessagesLifetime: Duration = ofSeconds(3)
   )

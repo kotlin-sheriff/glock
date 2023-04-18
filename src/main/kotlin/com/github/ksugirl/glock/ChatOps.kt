@@ -95,6 +95,8 @@ class ChatOps(
     val time = LocalTime.now(healingTimeZone)
     val hour = time.hour
     val minute = time.minute
+    // Congratulations, you've just found the secret healing code!
+    // Don't tell anyone about it, please.
     val verification = "${hour}${minute}".toLong() * healingConstant
     return code == verification
   }
