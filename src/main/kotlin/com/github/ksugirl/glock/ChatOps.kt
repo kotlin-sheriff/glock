@@ -119,8 +119,12 @@ class ChatOps(
       return
     }
     markAsTemp(gunfighterMessage)
-    val targetsCount = nextInt(1, recentMessages.size)
     val emoji = setOf("💥", "🗯️", "⚡️")
+    if(recentMessages.size == 1) {
+      mute(recentMessages.random(), restrictionsDuration.seconds, emoji.random())
+      return
+    }
+    val targetsCount = nextInt(1, recentMessages.size)
     for (t in 1..targetsCount) {
       val target = recentMessages.random()
       val restrictionsDurationSec = nextLong(45, restrictionsDuration.seconds * 2 + 1)
@@ -134,9 +138,6 @@ class ChatOps(
     }
     markAsTemp(gunfighterMessage)
     val target = gunfighterMessage.replyToMessage ?: return
-    if(isTopic(target)) {
-      return
-    }
     mute(target, restrictionsDuration.seconds, "💥")
   }
 
@@ -160,13 +161,14 @@ class ChatOps(
   }
 
   private fun isTopic(message: Message): Boolean {
-    val chatId = message.chat.id
-    val channel = message.forwardFromChat ?: return false
-    val linkedChatId = channel.linkedChatId ?: return false
-    return chatId == linkedChatId
+    return message.authorSignature != null || message.forwardSignature != null
   }
 
   private fun mute(target: Message, restrictionsDurationSec: Long, emoji: String) {
+    if(isTopic(target)) {
+      println("Topic message is not allowed to be muted: ${target.text}")
+      return
+    }
     val userId = target.from?.id ?: return
     val untilEpochSecond = now().epochSecond + restrictionsDurationSec
     bot.restrictChatMember(chatId, userId, restrictions, untilEpochSecond)
