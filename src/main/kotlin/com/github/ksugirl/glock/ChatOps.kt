@@ -61,10 +61,10 @@ class ChatOps(
     if(isRestricted(healerMessage)) {
       return
     }
+    markAsTemp(healerMessage.messageId)
     val target = healerMessage.replyToMessage ?: return
     val targetId = target.from?.id ?: return
     val magicCode = extractMagicCode(args) ?: return
-    markAsTemp(healerMessage.messageId)
     if(!isHealingCode(magicCode)) {
       return
     }
@@ -123,7 +123,7 @@ class ChatOps(
     val emoji = setOf("💥", "🗯️", "⚡️")
     for (t in 1..targetsCount) {
       val target = recentMessages.random()
-      val restrictionsDurationSec = nextLong(45, restrictionsDuration.seconds + 1)
+      val restrictionsDurationSec = nextLong(45, restrictionsDuration.seconds * 2 + 1)
       mute(target, restrictionsDurationSec, emoji.random())
     }
   }
@@ -134,6 +134,9 @@ class ChatOps(
     }
     markAsTemp(gunfighterMessage.messageId)
     val target = gunfighterMessage.replyToMessage ?: return
+    if(isChannelPost(target)) {
+      return
+    }
     mute(target, restrictionsDuration.seconds, "💥")
   }
 
@@ -154,6 +157,12 @@ class ChatOps(
     val userId = message.from?.id ?: return false
     val epochSecond = usersToRestrictions[userId]
     return epochSecond != null && !isLifetimeExceeded(epochSecond)
+  }
+
+  private fun isChannelPost(message: Message): Boolean {
+    val authorId = message.from?.id ?: return false
+    val linkedChatId = message.chat.linkedChatId ?: return false
+    return authorId == linkedChatId
   }
 
   private fun mute(target: Message, restrictionsDurationSec: Long, emoji: String) {
