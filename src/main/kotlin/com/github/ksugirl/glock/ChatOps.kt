@@ -160,9 +160,7 @@ class ChatOps(
   }
 
   private fun isTopic(message: Message): Boolean {
-    val authorId = message.from?.id ?: return false
-    val linkedChatId = message.chat.linkedChatId ?: return false
-    return authorId == linkedChatId
+    return message.authorSignature != null
   }
 
   private fun mute(target: Message, restrictionsDurationSec: Long, emoji: String) {
