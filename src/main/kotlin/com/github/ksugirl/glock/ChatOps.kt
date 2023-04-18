@@ -134,7 +134,6 @@ class ChatOps(
     }
     markAsTemp(gunfighterMessage)
     val target = gunfighterMessage.replyToMessage ?: return
-    println("Message: ${target.text} Sign: ${target.authorSignature}")
     if(isTopic(target)) {
       return
     }
@@ -161,7 +160,10 @@ class ChatOps(
   }
 
   private fun isTopic(message: Message): Boolean {
-    return message.authorSignature != null
+    val chatId = message.chat.id
+    val channel = message.forwardFromChat ?: return false
+    val linkedChatId = channel.linkedChatId ?: return false
+    return chatId == linkedChatId
   }
 
   private fun mute(target: Message, restrictionsDurationSec: Long, emoji: String) {
