@@ -149,8 +149,12 @@ class ChatOps(
     if (isRestricted(gunfighterMessage)) {
       return
     }
-    val target = gunfighterMessage.replyToMessage ?: return
-    mute(target, restrictionsDuration.seconds, "💥")
+    val target = gunfighterMessage.replyToMessage
+    if (target == null) {
+      mute(gunfighterMessage, restrictionsDuration.seconds, "💥")
+    } else {
+      mute(target, restrictionsDuration.seconds, "💥")
+    }
     markAsTemp(gunfighterMessage)
   }
 
