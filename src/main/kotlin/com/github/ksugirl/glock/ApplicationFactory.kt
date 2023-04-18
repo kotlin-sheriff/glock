@@ -6,12 +6,13 @@ import com.sksamuel.hoplite.addEnvironmentSource
 import java.time.Duration
 import java.time.Duration.ofSeconds
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 open class ApplicationFactory {
   data class Config(
     val telegramApiToken: String,
     val healingConstant: Long,
-    val healingTimeZone: ZoneId,
+    val healingTimeZone: ZoneOffset,
     val restrictionsDuration: Duration = ofSeconds(60),
     val tempMessagesLifetime: Duration = ofSeconds(3)
   )
