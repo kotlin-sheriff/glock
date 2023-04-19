@@ -6,7 +6,6 @@ import com.sksamuel.hoplite.addEnvironmentSource
 import java.time.Duration
 import java.time.Duration.ofSeconds
 import java.time.ZoneId
-import java.time.ZoneOffset
 
 open class ApplicationFactory {
   data class Config(
@@ -22,6 +21,10 @@ open class ApplicationFactory {
       .addEnvironmentSource()
       .build()
       .loadConfigOrThrow<Config>()
+  }
+
+  init {
+    println(config.restrictionsDuration)
   }
 
   open val restrictions = ChatPermissions(
