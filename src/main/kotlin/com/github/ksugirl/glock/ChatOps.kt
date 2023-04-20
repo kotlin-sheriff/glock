@@ -208,7 +208,7 @@ class ChatOps(
   private fun reply(to: Message, emoji: String, isTemp: Boolean = false): Long? {
     val message =
       try {
-        bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId).get()
+        bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId, disableNotification = true).get()
       } catch (e: IllegalStateException) {
         return null
       }
