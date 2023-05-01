@@ -1,4 +1,4 @@
-package com.github.ksugirl.glock
+package com.github.sheriff.kotlin.glock
 
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch

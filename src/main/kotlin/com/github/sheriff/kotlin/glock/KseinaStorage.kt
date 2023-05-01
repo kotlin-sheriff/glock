@@ -1,5 +1,4 @@
-package com.github.ksugirl.glock
-
+package com.github.sheriff.kotlin.glock
 
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ChatId

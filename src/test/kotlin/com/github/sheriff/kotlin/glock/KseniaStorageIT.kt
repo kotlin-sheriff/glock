@@ -1,5 +1,6 @@
-package com.github.ksugirl.glock
+package com.github.sheriff.kotlin.glock
 
+import com.github.sheriff.kotlin.glock.KseniaStorage
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.google.common.primitives.Longs.tryParse
@@ -38,12 +39,12 @@ class KseniaStorageIT {
 
   @Test
   fun testSave() {
-    storage["id"] = People("Elon Musk", "Texas", mapOf(1L to 100L))
+    storage[1] = People("Elon Musk", "Texas", mapOf(1L to 100L))
   }
 
   @Test
   fun testDownload() {
-    assertThat(storage.get<People>("id"))
+    assertThat(storage.get<People>(1))
       .isEqualTo(People("Elon Musk", "Texas", mapOf(1L to 100L)))
   }
 }

@@ -1,4 +1,4 @@
-package com.github.ksugirl.glock
+package com.github.sheriff.kotlin.glock
 
 import java.lang.Thread.sleep
 import java.lang.Thread.startVirtualThread

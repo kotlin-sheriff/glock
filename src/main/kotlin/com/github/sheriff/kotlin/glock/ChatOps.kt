@@ -1,11 +1,11 @@
-package com.github.ksugirl.glock
+package com.github.sheriff.kotlin.glock
 
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.github.kotlintelegrambot.entities.Message
-import com.github.ksugirl.glock.ChatOps.Reply.Persistent
-import com.github.ksugirl.glock.ChatOps.Reply.Temp
+import com.github.sheriff.kotlin.glock.ChatOps.Reply.Persistent
+import com.github.sheriff.kotlin.glock.ChatOps.Reply.Temp
 import org.apache.commons.collections4.QueueUtils.synchronizedQueue
 import org.apache.commons.collections4.queue.CircularFifoQueue
 import java.io.Closeable
