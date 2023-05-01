@@ -34,4 +34,4 @@ jobs:
         arguments: build
       env:
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-        CHANNEL_NAME: ${{ secrets.CHANNEL_NAME }}
+        CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
