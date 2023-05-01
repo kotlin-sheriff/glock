@@ -4,11 +4,15 @@ import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.github.kotlintelegrambot.entities.Message
+import com.github.ksugirl.glock.ChatOps.Reply.Persistent
+import com.github.ksugirl.glock.ChatOps.Reply.Temp
 import org.apache.commons.collections4.QueueUtils.synchronizedQueue
 import org.apache.commons.collections4.queue.CircularFifoQueue
 import java.io.Closeable
 import java.time.Duration
+import java.time.Duration.between
 import java.time.Instant.now
+import java.time.Instant.ofEpochSecond
 import java.time.LocalTime
 import java.time.ZoneId
 import java.util.concurrent.ConcurrentHashMap
@@ -23,6 +27,7 @@ import kotlin.random.Random.Default.nextLong
 class ChatOps(
   private val bot: Bot,
   private val chatId: ChatId,
+  private val storage: KseniaStorage,
   private val restrictions: ChatPermissions,
   private val restrictionsDuration: Duration,
   private val tempMessagesLifetime: Duration,
@@ -35,8 +40,6 @@ class ChatOps(
   private val messagesToLifetimes = ConcurrentHashMap<Long, Long>()
   private val recentMessages = synchronizedQueue(CircularFifoQueue<Message>(12))
   private val statuettes = ConcurrentLinkedQueue<Long>()
-  private val excludedUsersIds = mutableSetOf<Long>()
-  private val dailyActive = mutableSetOf<Long>()
 
   fun cleanTempMessages() {
     val tempMessagesCount = messagesToLifetimes.mappingCount()
@@ -50,11 +53,32 @@ class ChatOps(
     }.get()
   }
 
-  fun iDontWantToPlayAnymore(message: Message) {
-    if(isRestricted(message)) {
+  private fun logActivity(m: Message) {
+    val userId = m.from?.id?.toString() ?: return
+    storage[userId] = now().epochSecond
+  }
+
+  fun tryLeaveGame(m: Message) {
+    if (isRestricted(m)) {
       return
     }
-    // todo сохранение в телеграм
+    if (isIsHePeacefulToday(m)) {
+      reply(m, "🕊️")
+      return leaveGame(m)
+    }
+    reply(m, "Since you have already shot other users, you cannot quit the game until 24 hours have passed 😈")
+  }
+
+  private fun leaveGame(m: Message) {
+    val userId = m.from?.id?.toString() ?: return
+    storage.remove(userId)
+  }
+
+  private fun isIsHePeacefulToday(message: Message): Boolean {
+    val userId = message.from?.id?.toString() ?: return true
+    val lastActivity = storage.get<Long>(userId) ?: return true
+    val passedHours = between(ofEpochSecond(lastActivity), now()).toHours()
+    return passedHours >= 24
   }
 
   fun filterMessage(message: Message) {
@@ -93,7 +117,7 @@ class ChatOps(
       usersToRestrictions.remove(targetId)
     }
     val emoji = setOf("💊", "💉", "🚑")
-    reply(target, emoji.random(), true)
+    reply(target, emoji.random())
     markAsTemp(healerMessage)
   }
 
@@ -115,7 +139,8 @@ class ChatOps(
     if (isRestricted(gunfighterMessage)) {
       return
     }
-    val statuetteId = reply(gunfighterMessage, "🗿")
+    logActivity(gunfighterMessage)
+    val statuetteId = reply(gunfighterMessage, "🗿", Persistent)
     if (statuetteId != null) {
       statuettes += statuetteId
     }
@@ -135,6 +160,7 @@ class ChatOps(
     if (isRestricted(gunfighterMessage)) {
       return
     }
+    logActivity(gunfighterMessage)
     if (recentMessages.isEmpty()) {
       markAsTemp(gunfighterMessage)
       return
@@ -158,6 +184,7 @@ class ChatOps(
     if (isRestricted(gunfighterMessage)) {
       return
     }
+    logActivity(gunfighterMessage)
     val target = gunfighterMessage.replyToMessage
     if (target == null) {
       mute(gunfighterMessage, restrictionsDuration.seconds, "💥")
@@ -192,8 +219,12 @@ class ChatOps(
       || message.forwardSignature != null
   }
 
-  private fun mute(target: Message, restrictionsDurationSec: Long, emoji: String) {
+  private fun mute(target: Message, restrictionsDurationSec: Long, shootEmoji: String) {
     if (isTopic(target)) {
+      return
+    }
+    if(!isLegalTarget(target)) {
+      reply(target, "💨")
       return
     }
     val userId = target.from?.id ?: return
@@ -207,21 +238,28 @@ class ChatOps(
         }
       }
     }
-    reply(target, emoji, true)
+    reply(target, shootEmoji)
+  }
+
+  private fun isLegalTarget(m: Message): Boolean {
+    val userId = m.from?.id?.toString() ?: return false
+    return storage.keys.contains(userId)
   }
 
   private fun isLifetimeExceeded(epochSecond: Long): Boolean {
     return epochSecond < now().epochSecond
   }
 
-  private fun reply(to: Message, emoji: String, isTemp: Boolean = false): Long? {
+  private enum class Reply { Temp, Persistent }
+
+  private fun reply(to: Message, emoji: String, type: Reply = Temp): Long? {
     val message =
       try {
         bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId, disableNotification = true).get()
       } catch (e: IllegalStateException) {
         return null
       }
-    if (isTemp) {
+    if (type == Temp) {
       markAsTemp(message)
     }
     return message.messageId

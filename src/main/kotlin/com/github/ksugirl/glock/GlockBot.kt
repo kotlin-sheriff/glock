@@ -6,6 +6,7 @@ import com.github.kotlintelegrambot.dispatcher.command
 import com.github.kotlintelegrambot.dispatcher.handlers.HandleCommand
 import com.github.kotlintelegrambot.dispatcher.handlers.HandleMessage
 import com.github.kotlintelegrambot.dispatcher.message
+import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.github.kotlintelegrambot.entities.Message
@@ -19,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class GlockBot(
   apiKey: String,
+  storageId: ChatId,
   private val restrictions: ChatPermissions,
   private val restrictionsDuration: Duration,
   private val tempMessagesLifetime: Duration,
@@ -33,7 +35,7 @@ class GlockBot(
     }
   }
 
-  private val bot =
+  val bot =
     bot {
       token = apiKey
       dispatch {
@@ -41,10 +43,13 @@ class GlockBot(
         command("buckshot", handleCommand(ChatOps::buckshot))
         command("statuette", handleCommand(ChatOps::statuette))
         command("heal", handleCommand(ChatOps::heal))
+        command("leave", handleCommand(ChatOps::tryLeaveGame))
         message(handleMessage(ChatOps::filterMessage))
         message(handleMessage(ChatOps::tryProcessStatuette))
       }
     }
+
+  private val storage = KseniaStorage(bot, storageId)
 
   private val idToChatOps = ConcurrentHashMap<Long, ChatOps>()
 
@@ -72,6 +77,7 @@ class GlockBot(
     return ChatOps(
       bot,
       fromId(chatId),
+      storage,
       restrictions,
       restrictionsDuration,
       tempMessagesLifetime,

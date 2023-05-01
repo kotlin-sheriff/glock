@@ -1,18 +1,21 @@
 package com.github.ksugirl.glock
 
+import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
 import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addEnvironmentSource
 import java.time.Duration
+import java.time.Duration.ofMinutes
 import java.time.Duration.ofSeconds
 import java.time.ZoneId
 
 open class ApplicationFactory {
   data class Config(
     val telegramApiToken: String,
+    val storageId: Long,
     val healingConstant: Long = 7,
     val healingTimeZone: String = "Asia/Jerusalem",
-    val restrictionsDuration: Duration = ofSeconds(60),
+    val restrictionsDuration: Duration = ofMinutes(5),
     val tempMessagesLifetime: Duration = ofSeconds(3)
   )
 
@@ -41,6 +44,7 @@ open class ApplicationFactory {
   open val glockBot by lazy {
     GlockBot(
       config.telegramApiToken,
+      fromId(config.storageId),
       restrictions,
       config.restrictionsDuration,
       config.tempMessagesLifetime,
