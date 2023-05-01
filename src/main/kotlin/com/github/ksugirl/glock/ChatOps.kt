@@ -35,6 +35,8 @@ class ChatOps(
   private val messagesToLifetimes = ConcurrentHashMap<Long, Long>()
   private val recentMessages = synchronizedQueue(CircularFifoQueue<Message>(12))
   private val statuettes = ConcurrentLinkedQueue<Long>()
+  private val excludedUsersIds = mutableSetOf<Long>()
+  private val dailyActive = mutableSetOf<Long>()
 
   fun cleanTempMessages() {
     val tempMessagesCount = messagesToLifetimes.mappingCount()
@@ -46,6 +48,13 @@ class ChatOps(
       val restrictedUsersCount = usersToRestrictions.mappingCount()
       usersToRestrictions.forEach(restrictedUsersCount, ::processRestriction)
     }.get()
+  }
+
+  fun iDontWantToPlayAnymore(message: Message) {
+    if(isRestricted(message)) {
+      return
+    }
+    // todo сохранение в телеграм
   }
 
   fun filterMessage(message: Message) {
