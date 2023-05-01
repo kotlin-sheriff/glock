@@ -2,7 +2,6 @@ package com.github.ksugirl.glock
 
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.entities.ChatId.Companion.fromId
-import com.google.common.primitives.Longs
 import com.google.common.primitives.Longs.tryParse
 import com.google.common.truth.Truth.assertThat
 import kotlinx.serialization.Serializable
@@ -28,7 +27,7 @@ class KseniaStorageIT {
   @BeforeEach
   fun openChannelStorage() {
     val bot = bot { token = getenv("BOT_TOKEN") }
-    val channelId = fromId(tryParse(getenv("CHANNEL_NAME"))!!)
+    val channelId = fromId(tryParse(getenv("CHANNEL_ID"))!!)
     storage = KseniaStorage(bot, channelId)
   }
 
