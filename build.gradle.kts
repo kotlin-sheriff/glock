@@ -46,7 +46,3 @@ tasks.withType<Test> {
   useJUnitPlatform()
   jvmArgs("--enable-preview")
 }
-
-tasks.installDist {
-  dependsOn(tasks.test)
-}

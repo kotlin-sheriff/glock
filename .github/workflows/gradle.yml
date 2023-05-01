@@ -28,10 +28,10 @@ jobs:
       with:
         java-version: '19'
         distribution: 'temurin'
-    - name: Build with Gradle
+    - name: Test with Gradle
       uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
       with:
-        arguments: build
+        arguments: test
       env:
         TELEGRAM_API_TOKEN: ${{ secrets.BOT_TOKEN }}
         TEST_CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
