@@ -35,7 +35,7 @@ class GlockBot(
     }
   }
 
-  val bot =
+  private val bot =
     bot {
       token = apiKey
       dispatch {

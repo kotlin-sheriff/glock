@@ -27,7 +27,7 @@ import kotlin.random.Random.Default.nextLong
 class ChatOps(
   private val bot: Bot,
   private val chatId: ChatId,
-  private val storage: KseniaStorage,
+  private val userToLastActivity: KseniaStorage,
   private val restrictions: ChatPermissions,
   private val restrictionsDuration: Duration,
   private val tempMessagesLifetime: Duration,
@@ -54,8 +54,8 @@ class ChatOps(
   }
 
   private fun logActivity(m: Message) {
-    val userId = m.from?.id?.toString() ?: return
-    storage[userId] = now().epochSecond
+    val userId = m.from?.id ?: return
+    userToLastActivity[userId] = now().epochSecond
   }
 
   fun tryLeaveGame(m: Message) {
@@ -70,13 +70,13 @@ class ChatOps(
   }
 
   private fun leaveGame(m: Message) {
-    val userId = m.from?.id?.toString() ?: return
-    storage.remove(userId)
+    val userId = m.from?.id ?: return
+    userToLastActivity.remove(userId)
   }
 
   private fun isIsHePeacefulToday(message: Message): Boolean {
-    val userId = message.from?.id?.toString() ?: return true
-    val lastActivity = storage.get<Long>(userId) ?: return true
+    val userId = message.from?.id ?: return true
+    val lastActivity = userToLastActivity.get<Long>(userId) ?: return true
     val passedHours = between(ofEpochSecond(lastActivity), now()).toHours()
     return passedHours >= 24
   }
@@ -242,8 +242,8 @@ class ChatOps(
   }
 
   private fun isLegalTarget(m: Message): Boolean {
-    val userId = m.from?.id?.toString() ?: return false
-    return storage.keys.contains(userId)
+    val userId = m.from?.id ?: return false
+    return userToLastActivity.keys.contains(userId)
   }
 
   private fun isLifetimeExceeded(epochSecond: Long): Boolean {

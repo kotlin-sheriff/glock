@@ -30,10 +30,10 @@ class KseniaStorage(private val bot: Bot, private val channel: ChatId) : Closeab
   /**
    * Map: your key -> bot file id
    */
-  private val keyToTelegramFileId: MutableMap<String, String> = run {
+  private val keyToTelegramFileId: MutableMap<Long, String> = run {
     val fileId = bot.getChat(channel).get().description ?: return@run ConcurrentHashMap()
     val bytes = bot.downloadFileBytes(fileId) ?: return@run ConcurrentHashMap()
-    val map = Cbor.decodeFromByteArray<Map<String, String>>(bytes)
+    val map = Cbor.decodeFromByteArray<Map<Long, String>>(bytes)
     ConcurrentHashMap(map)
   }
 
@@ -57,7 +57,7 @@ class KseniaStorage(private val bot: Bot, private val channel: ChatId) : Closeab
 
   val size get() = keyToTelegramFileId.size
 
-  fun remove(k: String): Future<*>? {
+  fun remove(k: Long): Future<*>? {
     return atomicExecutor.submit {
       keyToTelegramFileId.remove(k)
     }
@@ -70,14 +70,14 @@ class KseniaStorage(private val bot: Bot, private val channel: ChatId) : Closeab
    * @param k key to value
    * @param v see [Telegram Bot API limits](https://core.telegram.org/bots/faq#handling-media)
    */
-  fun setBinary(k: String, v: ByteArray): Future<*>? {
+  fun setBinary(k: Long, v: ByteArray): Future<*>? {
     return atomicExecutor.submit {
       val telegramFile = ByByteArray(v)
       keyToTelegramFileId[k] = bot.sendDocument(channel, telegramFile).first?.body()?.result?.document?.fileId!!
     }
   }
 
-  inline operator fun <reified V> get(k: String): V? {
+  inline operator fun <reified V> get(k: Long): V? {
     val bytes = getBinary(k) ?: return null
     return Cbor.decodeFromByteArray<V>(bytes)
   }
@@ -87,7 +87,7 @@ class KseniaStorage(private val bot: Bot, private val channel: ChatId) : Closeab
    * @param V storable value type. Should be [basic](https://kotlinlang.org/docs/basic-types.html) or annotated with [Serializable]
    * @param v see [Telegram Bot API limits](https://core.telegram.org/bots/faq#handling-media)
    */
-  inline operator fun <reified V> set(k: String, v: V): Future<*>? {
+  inline operator fun <reified V> set(k: Long, v: V): Future<*>? {
     return setBinary(k, Cbor.encodeToByteArray(v))
   }
 
@@ -96,7 +96,7 @@ class KseniaStorage(private val bot: Bot, private val channel: ChatId) : Closeab
    * @param k your key
    * @return value bytes
    */
-  fun getBinary(k: String): ByteArray? {
+  fun getBinary(k: Long): ByteArray? {
     return keyToTelegramFileId[k]?.let(bot::downloadFileBytes)
   }
 
