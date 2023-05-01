@@ -26,8 +26,8 @@ class KseniaStorageIT {
 
   @BeforeEach
   fun openChannelStorage() {
-    val bot = bot { token = getenv("BOT_TOKEN") }
-    val channelId = fromId(tryParse(getenv("CHANNEL_ID"))!!)
+    val bot = bot { token = getenv("TELEGRAM_API_TOKEN") }
+    val channelId = fromId(tryParse(getenv("TEST_CHANNEL_ID"))!!)
     storage = KseniaStorage(bot, channelId)
   }
 
