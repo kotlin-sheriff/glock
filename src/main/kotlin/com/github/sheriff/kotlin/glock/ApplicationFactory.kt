@@ -15,8 +15,7 @@ open class ApplicationFactory {
     val storageId: Long,
     val healingConstant: Long = 7,
     val healingTimeZone: String = "Asia/Jerusalem",
-    val restrictionsDuration: Duration = ofMinutes(5),
-    val tempMessagesLifetime: Duration = ofSeconds(3)
+    val restrictionsDuration: Duration = ofMinutes(5)
   )
 
   open val config by lazy {
@@ -47,7 +46,6 @@ open class ApplicationFactory {
       fromId(config.storageId),
       restrictions,
       config.restrictionsDuration,
-      config.tempMessagesLifetime,
       config.healingConstant,
       ZoneId.of(config.healingTimeZone)
     )

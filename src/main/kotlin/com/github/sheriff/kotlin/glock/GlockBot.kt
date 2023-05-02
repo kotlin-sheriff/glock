@@ -23,7 +23,6 @@ class GlockBot(
   storageId: ChatId,
   private val restrictions: ChatPermissions,
   private val restrictionsDuration: Duration,
-  private val tempMessagesLifetime: Duration,
   private val healingConstant: Long,
   private val healingTimeZone: ZoneId
 ) : Closeable {
@@ -44,6 +43,8 @@ class GlockBot(
         command("statuette", handleCommand(ChatOps::statuette))
         command("heal", handleCommand(ChatOps::heal))
         command("leave", handleCommand(ChatOps::tryLeaveGame))
+        command("help", handleCommand(ChatOps::help))
+        command("start", handleCommand(ChatOps::help))
         message(handleMessage(ChatOps::filterMessage))
         message(handleMessage(ChatOps::tryProcessStatuette))
       }
@@ -80,7 +81,6 @@ class GlockBot(
       storage,
       restrictions,
       restrictionsDuration,
-      tempMessagesLifetime,
       healingConstant,
       healingTimeZone
     )

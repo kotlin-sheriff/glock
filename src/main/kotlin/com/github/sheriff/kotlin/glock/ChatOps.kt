@@ -4,13 +4,12 @@ import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.ChatPermissions
 import com.github.kotlintelegrambot.entities.Message
-import com.github.sheriff.kotlin.glock.ChatOps.Reply.Persistent
-import com.github.sheriff.kotlin.glock.ChatOps.Reply.Temp
 import org.apache.commons.collections4.QueueUtils.synchronizedQueue
 import org.apache.commons.collections4.queue.CircularFifoQueue
 import java.io.Closeable
 import java.time.Duration
 import java.time.Duration.between
+import java.time.Duration.ofSeconds
 import java.time.Instant.now
 import java.time.Instant.ofEpochSecond
 import java.time.LocalTime
@@ -30,7 +29,6 @@ class ChatOps(
   private val userToLastActivity: KseniaStorage,
   private val restrictions: ChatPermissions,
   private val restrictionsDuration: Duration,
-  private val tempMessagesLifetime: Duration,
   private val healingConstant: Long,
   private val healingTimeZone: ZoneId
 ) : Closeable {
@@ -58,15 +56,31 @@ class ChatOps(
     userToLastActivity[userId] = now().epochSecond
   }
 
+  fun help(m: Message) {
+    if (isRestricted(m)) {
+      return
+    }
+    markAsTemp(m)
+    val rules =
+      """
+        Logging into the game is done by trying to shoot someone else's message, from this point you can be banned (and you can ban other players).
+        If you are not logged in, then you cannot be shot.
+      """.trimIndent()
+    reply(m, rules, Temp(ofSeconds(20)))
+  }
+
   fun tryLeaveGame(m: Message) {
     if (isRestricted(m)) {
       return
     }
+    markAsTemp(m)
     if (isIsHePeacefulToday(m)) {
       reply(m, "🕊️")
       return leaveGame(m)
     }
-    reply(m, "Since you have already shot other users, you cannot quit the game until 24 hours have passed 😈")
+    val notification =
+      "Since you have already shot other users, you cannot quit the game until 24 hours have passed 😈"
+    reply(m, notification, Temp(ofSeconds(10)))
   }
 
   private fun leaveGame(m: Message) {
@@ -223,7 +237,7 @@ class ChatOps(
     if (isTopic(target)) {
       return
     }
-    if(!isLegalTarget(target)) {
+    if (!isLegalTarget(target)) {
       reply(target, "💨")
       return
     }
@@ -250,23 +264,27 @@ class ChatOps(
     return epochSecond < now().epochSecond
   }
 
-  private enum class Reply { Temp, Persistent }
+  private sealed interface ReplyLifetime
 
-  private fun reply(to: Message, emoji: String, type: Reply = Temp): Long? {
+  private class Temp(val duration: Duration) : ReplyLifetime
+
+  private object Persistent : ReplyLifetime
+
+  private fun reply(to: Message, emoji: String, lifetime: ReplyLifetime = Temp(ofSeconds(3))): Long? {
     val message =
       try {
         bot.sendMessage(chatId, emoji, replyToMessageId = to.messageId, disableNotification = true).get()
       } catch (e: IllegalStateException) {
         return null
       }
-    if (type == Temp) {
-      markAsTemp(message)
+    if (lifetime is Temp) {
+      markAsTemp(message, lifetime.duration)
     }
     return message.messageId
   }
 
-  private fun markAsTemp(message: Message) {
-    messagesToLifetimes[message.messageId] = now().epochSecond + tempMessagesLifetime.seconds
+  private fun markAsTemp(message: Message, lifetime: Duration = ofSeconds(3)) {
+    messagesToLifetimes[message.messageId] = now().epochSecond + lifetime.seconds
   }
 
   override fun close() {
