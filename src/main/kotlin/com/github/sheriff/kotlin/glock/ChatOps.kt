@@ -60,27 +60,29 @@ class ChatOps(
     if (isRestricted(m)) {
       return
     }
-    markAsTemp(m)
+    val dialogLifetime = ofSeconds(20)
+    markAsTemp(m, dialogLifetime)
     val rules =
       """
         Logging into the game is done by trying to shoot someone else's message, from this point you can be banned (and you can ban other players).
         If you are not logged in, then you cannot be shot.
       """.trimIndent()
-    reply(m, rules, Temp(ofSeconds(20)))
+    reply(m, rules, Temp(dialogLifetime))
   }
 
   fun tryLeaveGame(m: Message) {
     if (isRestricted(m)) {
       return
     }
-    markAsTemp(m)
+    val dialogLifetime = ofSeconds(10)
+    markAsTemp(m, dialogLifetime)
     if (isIsHePeacefulToday(m)) {
       reply(m, "🕊️")
       return leaveGame(m)
     }
     val notification =
       "Since you have already shot other users, you cannot quit the game until 24 hours have passed 😈"
-    reply(m, notification, Temp(ofSeconds(10)))
+    reply(m, notification, Temp(dialogLifetime))
   }
 
   private fun leaveGame(m: Message) {
